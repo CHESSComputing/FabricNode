@@ -122,14 +122,3 @@ chess-fabric-node/
         ├── Dockerfile
         └── README.md
 ```
-
-## Production Upgrade Path
-
-| Component | PoC (this repo) | Production |
-|-----------|----------------|------------|
-| Triple store | In-memory Go map | [Oxigraph](https://github.com/oxigraph/oxigraph) (SPARQL 1.2) |
-| DID method | `did:web` | `did:webvh` with Credo-TS sidecar |
-| SHACL validation | Hand-written subset | Full SHACL 1.2 via Java/Python sidecar |
-| VC multi-proof | Single Ed25519 proof | Bootstrap witness co-signing (VC 2.0 `previousProof`) |
-| Key persistence | Ephemeral (generated at start) | HSM / Vault secret store |
-| Agent integration | External (curl / HTTP) | DSPy RLM programs via `fabric_discovery.py` |
