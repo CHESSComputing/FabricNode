@@ -1,0 +1,85 @@
+version: "3.9"
+
+# ─────────────────────────────────────────────────────────────────────────────
+# CHESS Federated Knowledge Fabric Node
+# Starts all four services with the correct inter-service URLs.
+#
+# Usage:
+#   docker compose up --build
+# ─────────────────────────────────────────────────────────────────────────────
+
+x-common-env: &common-env
+  NODE_ID:   "chess-node"
+  NODE_NAME: "CHESS Federated Knowledge Fabric Node"
+
+services:
+
+  # ── L1/L3/L4 Self-description ───────────────────────────────────────────────
+  catalog:
+    build: ./services/catalog-service
+    container_name: chess-catalog
+    ports:
+      - "8081:8081"
+    environment:
+      <<: *common-env
+      PORT:         "8081"
+      NODE_BASE_URL: "http://localhost:8081"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8081/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ── SPARQL / Triple store ────────────────────────────────────────────────────
+  data:
+    build: ./services/data-service
+    container_name: chess-data
+    ports:
+      - "8082:8082"
+    environment:
+      <<: *common-env
+      PORT: "8082"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8082/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ── DID / Verifiable Credentials identity ───────────────────────────────────
+  identity:
+    build: ./services/identity-service
+    container_name: chess-identity
+    ports:
+      - "8083:8083"
+    environment:
+      <<: *common-env
+      PORT:             "8083"
+      NODE_BASE_URL:    "http://localhost:8083"
+      CATALOG_URL:      "http://catalog:8081"
+      DATA_URL:         "http://data:8082"
+      NOTIFICATION_URL: "http://notifications:8084"
+    depends_on:
+      catalog:
+        condition: service_healthy
+      data:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8083/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ── LDN notification inbox ───────────────────────────────────────────────────
+  notifications:
+    build: ./services/notification-service
+    container_name: chess-notifications
+    ports:
+      - "8084:8084"
+    environment:
+      <<: *common-env
+      PORT: "8084"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8084/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
