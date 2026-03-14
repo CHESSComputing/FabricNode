@@ -103,7 +103,7 @@ context to answer its query.
 ## Project Structure
 
 ```
-chess-fabric-node/
+FabricNode/
 ├── CONCEPT.md                   ← Federated Knowledge Fabric concept summary
 ├── docker-compose.yml
 ├── Makefile
