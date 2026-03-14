@@ -37,14 +37,40 @@ specific layer of the W3C-standards-based self-description stack defined in the
 ## Quick Start
 
 ```bash
-# Start entire node
-docker compose up --build
+# build all components
+make build
+
+# start all components
+make start
+
+# check components status
+ make status
+
+SERVICE                  STATUS   PID    PORT       HEALTH
+──────────────────────────────────────────────────────────────────────
+catalog-service          running               83022  8081       healthy
+data-service             running               83030  8082       healthy
+identity-service         running               83103  8083       healthy
+notification-service     running               83111  8084       healthy
 
 # Run the end-to-end demo
 make demo
+...
+Demo complete.
+
+All four fabric layers demonstrated:
+  L1 VoID + PROF    → catalog:8081/.well-known/void
+  L3 SHACL          → catalog:8081/.well-known/shacl
+  L4 SPARQL examples → catalog:8081/.well-known/sparql-examples
+  Data              → data:8082/sparql
+  Identity (DID+VC) → identity:8083/.well-known/did.json
+  Notifications(LDN)→ notifications:8084/inbox
 
 # Check all service health
 make health
+
+# cleanup
+make clean/all
 ```
 
 ## What an Agent Does with This Node
