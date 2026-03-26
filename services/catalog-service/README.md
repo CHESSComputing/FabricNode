@@ -74,3 +74,16 @@ would read these endpoints in order:
 4. `/.well-known/sparql-examples` → copies example queries as templates
 
 Each step narrows the context before the agent issues a single data query.
+
+## CHESS catalog
+This catalog service represents CHESS catalog. The catalog
+consists of different beamlines which by itself contains multiple
+or produce datasets. Below you can see a hierarchical structure:
+
+```
+/catalog                     (dcat:Catalog)
+ ├── /catalog/beamline-id1  (dcat:Catalog + chess:Beamline)
+ │     └── datasets (future)
+ ├── /catalog/beamline-id3
+ └── /catalog/beamline-fast
+ ```
