@@ -1,0 +1,34 @@
+{
+  "@context": {
+    "void":  "http://rdfs.org/ns/void#",
+    "dcat":  "http://www.w3.org/ns/dcat#",
+    "dct":   "http://purl.org/dc/terms/",
+    "rdfs":  "http://www.w3.org/2000/01/rdf-schema#",
+    "chess": "http://chess.cornell.edu/ns#"
+  },
+  "@id": "{{.BaseURL}}/dataset",
+  "@type": ["void:Dataset", "dcat:Dataset"],
+  "rdfs:label": "{{.NodeName}}",
+  "void:sparqlEndpoint": {"@id": "{{.BaseURL}}/sparql"},
+  "dct:conformsTo": {"@id": "https://w3id.org/cogitarelink/fabric#CoreProfile"},
+  "void:subset": [
+    {
+      "@id": "{{.BaseURL}}/dataset/beamline-id1",
+      "@type": "void:Dataset",
+      "rdfs:label": "Beamline ID1 — X-ray Diffraction",
+      "chess:beamlineType": "x-ray-diffraction"
+    },
+    {
+      "@id": "{{.BaseURL}}/dataset/beamline-id3",
+      "@type": "void:Dataset",
+      "rdfs:label": "Beamline ID3 — Protein Crystallography",
+      "chess:beamlineType": "protein-crystallography"
+    },
+    {
+      "@id": "{{.BaseURL}}/dataset/beamline-fast",
+      "@type": "void:Dataset",
+      "rdfs:label": "Beamline FAST — Time-Resolved Scattering",
+      "chess:beamlineType": "time-resolved-scattering"
+    }
+  ]
+}

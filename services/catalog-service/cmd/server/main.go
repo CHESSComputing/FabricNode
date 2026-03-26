@@ -1,16 +1,14 @@
 package main
 
 import (
-	"fmt"
 	"log"
 	"net/http"
 	"os"
-	"time"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 
-	"github.com/CHESSComputing/FabricNode/services/catalog-service/internal/rdf"
+	"github.com/CHESSComputing/FabricNode/services/catalog-service/internal/handlers"
 	"github.com/CHESSComputing/FabricNode/services/catalog-service/internal/void"
 )
 
@@ -28,70 +26,24 @@ func main() {
 	r.Use(corsMiddleware)
 
 	// ── L1: VoID dataset description ────────────────────────────────────────
-	r.Get("/.well-known/void", func(w http.ResponseWriter, req *http.Request) {
-		format := rdf.Negotiate(req)
-		w.Header().Set("Content-Type", string(format))
-		w.Header().Set("Link", `</.well-known/void>; rel="self"`)
-		addCacheHeaders(w, 300)
-		switch format {
-		case rdf.FormatJSONLD:
-			fmt.Fprint(w, void.VoIDJSONLD(cfg))
-		default:
-			fmt.Fprint(w, void.VoIDTurtle(cfg))
-		}
-	})
+	r.Get("/.well-known/void", handlers.VoID(cfg))
 
 	// ── L1: PROF capability profile ─────────────────────────────────────────
-	r.Get("/.well-known/profile", func(w http.ResponseWriter, req *http.Request) {
-		w.Header().Set("Content-Type", "text/turtle")
-		addCacheHeaders(w, 3600)
-		fmt.Fprint(w, void.ProfileTurtle(cfg))
-	})
+	r.Get("/.well-known/profile", handlers.Profile(cfg))
 
 	// ── L3: SHACL shapes ────────────────────────────────────────────────────
-	r.Get("/.well-known/shacl", func(w http.ResponseWriter, req *http.Request) {
-		w.Header().Set("Content-Type", "text/turtle")
-		addCacheHeaders(w, 3600)
-		fmt.Fprint(w, void.SHACLTurtle(cfg))
-	})
+	r.Get("/.well-known/shacl", handlers.SHACL(cfg))
 
 	// ── L4: SPARQL examples catalog ─────────────────────────────────────────
-	r.Get("/.well-known/sparql-examples", func(w http.ResponseWriter, req *http.Request) {
-		w.Header().Set("Content-Type", "text/turtle")
-		addCacheHeaders(w, 3600)
-		fmt.Fprint(w, void.SPARQLExamplesTurtle(cfg))
-	})
+	r.Get("/.well-known/sparql-examples", handlers.SPARQLExamples(cfg))
 
 	// ── Health + info ────────────────────────────────────────────────────────
-	r.Get("/health", func(w http.ResponseWriter, req *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		fmt.Fprintf(w, `{"status":"ok","service":"catalog-service","nodeId":%q}`, cfg.NodeID)
-	})
-
-	r.Get("/", func(w http.ResponseWriter, req *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		fmt.Fprintf(w, `{
-  "service": "catalog-service",
-  "description": "Knowledge Fabric self-description endpoints for CHESS node",
-  "endpoints": {
-    "void":           "/.well-known/void",
-    "profile":        "/.well-known/profile",
-    "shacl":          "/.well-known/shacl",
-    "sparqlExamples": "/.well-known/sparql-examples",
-    "health":         "/health"
-  }
-}`)
-	})
+	r.Get("/health", handlers.Health(cfg))
+	r.Get("/", handlers.Index(cfg))
 
 	port := getEnv("PORT", "8081")
 	log.Printf("catalog-service listening on :%s (node: %s, base: %s)", port, cfg.NodeID, cfg.BaseURL)
 	log.Fatal(http.ListenAndServe(":"+port, r))
-}
-
-func addCacheHeaders(w http.ResponseWriter, maxAgeSeconds int) {
-	w.Header().Set("Cache-Control", fmt.Sprintf("public, max-age=%d", maxAgeSeconds))
-	w.Header().Set("Vary", "Accept")
-	w.Header().Set("Last-Modified", time.Now().UTC().Format(http.TimeFormat))
 }
 
 func corsMiddleware(next http.Handler) http.Handler {

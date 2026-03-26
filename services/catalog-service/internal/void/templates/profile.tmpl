@@ -1,0 +1,33 @@
+@prefix prof:  <http://www.w3.org/ns/dx/prof/> .
+@prefix role:  <http://www.w3.org/ns/dx/prof/role/> .
+@prefix dct:   <http://purl.org/dc/terms/> .
+@prefix rdfs:  <http://www.w3.org/2000/01/rdf-schema#> .
+
+<https://w3id.org/cogitarelink/fabric#CoreProfile>
+    a prof:Profile ;
+    rdfs:label "Knowledge Fabric Core Profile" ;
+    dct:description "Minimum conformance requirements for a Knowledge Fabric node." ;
+
+    # L1 — service description
+    prof:hasResource [
+        a prof:ResourceDescriptor ;
+        prof:hasRole role:guidance ;
+        prof:hasArtifact <{{.BaseURL}}/.well-known/void> ;
+        dct:format "text/turtle"
+    ] ;
+
+    # L3 — SHACL shapes
+    prof:hasResource [
+        a prof:ResourceDescriptor ;
+        prof:hasRole role:constraints ;
+        prof:hasArtifact <{{.BaseURL}}/.well-known/shacl> ;
+        dct:format "text/turtle"
+    ] ;
+
+    # L4 — SPARQL examples
+    prof:hasResource [
+        a prof:ResourceDescriptor ;
+        prof:hasRole role:example ;
+        prof:hasArtifact <{{.BaseURL}}/.well-known/sparql-examples> ;
+        dct:format "text/turtle"
+    ] .

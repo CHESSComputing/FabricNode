@@ -1,0 +1,79 @@
+@prefix spex:  <https://purl.expasy.org/sparql-examples/ontology#> .
+@prefix sh:    <http://www.w3.org/ns/shacl#> .
+@prefix rdfs:  <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix schema: <https://schema.org/> .
+@prefix sosa:  <http://www.w3.org/ns/sosa/> .
+@prefix chess: <http://chess.cornell.edu/ns#> .
+
+# ── Example 1: list all beamlines ────────────────────────────────────────────
+<{{.BaseURL}}/sparql-examples/list-beamlines>
+    a spex:SparqlExample ;
+    rdfs:label "List all beamlines" ;
+    schema:description "Returns the IRI and label of every beamline registered at this node." ;
+    spex:query """
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX chess: <http://chess.cornell.edu/ns#>
+
+SELECT ?beamline ?label ?type WHERE {
+    ?beamline a chess:Beamline ;
+              rdfs:label ?label ;
+              chess:beamlineType ?type .
+}
+ORDER BY ?label
+""" .
+
+# ── Example 2: list recent observations for a beamline ───────────────────────
+<{{.BaseURL}}/sparql-examples/recent-observations>
+    a spex:SparqlExample ;
+    rdfs:label "Recent observations for a beamline" ;
+    schema:description "Returns the 10 most recent SOSA Observations from a given beamline sensor." ;
+    spex:query """
+PREFIX sosa: <http://www.w3.org/ns/sosa/>
+PREFIX xsd:  <http://www.w3.org/2001/XMLSchema#>
+PREFIX chess: <http://chess.cornell.edu/ns#>
+
+SELECT ?obs ?resultTime ?result WHERE {
+    ?obs a sosa:Observation ;
+         sosa:madeBySensor <http://chess.cornell.edu/sensor/id1-detector-01> ;
+         sosa:resultTime ?resultTime .
+    OPTIONAL { ?obs sosa:hasSimpleResult ?result . }
+}
+ORDER BY DESC(?resultTime)
+LIMIT 10
+""" .
+
+# ── Example 3: cross-beamline property query ──────────────────────────────────
+<{{.BaseURL}}/sparql-examples/cross-beamline-property>
+    a spex:SparqlExample ;
+    rdfs:label "Cross-beamline observed properties" ;
+    schema:description "Lists all distinct observable properties across all beamlines." ;
+    spex:query """
+PREFIX sosa: <http://www.w3.org/ns/sosa/>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+
+SELECT DISTINCT ?property ?label WHERE {
+    ?obs a sosa:Observation ;
+         sosa:observedProperty ?property .
+    OPTIONAL { ?property rdfs:label ?label . }
+}
+ORDER BY ?label
+""" .
+
+# ── Example 4: SIO measured value chain ──────────────────────────────────────
+<{{.BaseURL}}/sparql-examples/sio-measured-value>
+    a spex:SparqlExample ;
+    rdfs:label "SIO measured value with unit" ;
+    schema:description "Retrieves calibrated measurements using the SIO attribute/value/unit chain." ;
+    spex:query """
+PREFIX sosa: <http://www.w3.org/ns/sosa/>
+PREFIX sio:  <http://semanticscience.org/resource/>
+
+SELECT ?obs ?value ?unit WHERE {
+    ?obs a sosa:Observation ;
+         sio:has-attribute ?attr .
+    ?attr a sio:MeasuredValue ;
+          sio:has-value ?value ;
+          sio:has-unit ?unit .
+}
+LIMIT 20
+""" .
