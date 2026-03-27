@@ -1,7 +1,6 @@
 package main
 
 import (
-	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
@@ -13,24 +12,17 @@ import (
 	"github.com/google/uuid"
 
 	"github.com/CHESSComputing/FabricNode/services/identity-service/internal/did"
+	"github.com/CHESSComputing/FabricNode/services/identity-service/internal/handlers"
 	"github.com/CHESSComputing/FabricNode/services/identity-service/internal/vc"
 )
 
-// nodeState holds the keying material and pre-issued conformance credential
-// generated at startup.  In production, persist keys to a secret store.
-type nodeState struct {
-	keyPair    *did.KeyPair
-	didDoc     *did.Document
-	conformVC  *vc.FabricConformanceCredential
-}
-
 func main() {
-	baseURL := getEnv("NODE_BASE_URL", "http://localhost:8083")
-	nodeID  := getEnv("NODE_ID", "chess-node")
-	nodeName := getEnv("NODE_NAME", "CHESS Federated Knowledge Fabric Node")
+	baseURL    := getEnv("NODE_BASE_URL", "http://localhost:8083")
+	nodeID     := getEnv("NODE_ID", "chess-node")
+	nodeName   := getEnv("NODE_NAME", "CHESS Federated Knowledge Fabric Node")
 	catalogURL := getEnv("CATALOG_URL", "http://localhost:8081")
 
-	// ── Generate key pair at startup ────────────────────────────────────────
+	// ── Generate key pair at startup ─────────────────────────────────────────
 	kp, err := did.NewKeyPair()
 	if err != nil {
 		log.Fatalf("generate key pair: %v", err)
@@ -89,10 +81,11 @@ func main() {
 		log.Fatalf("issue conformance credential: %v", err)
 	}
 
-	state := &nodeState{
-		keyPair:   kp,
-		didDoc:    didDoc,
-		conformVC: conformVC,
+	state := &handlers.NodeState{
+		KeyID:     keyID,
+		KeyPair:   kp,
+		DIDDoc:    didDoc,
+		ConformVC: conformVC,
 	}
 
 	// ── Router ───────────────────────────────────────────────────────────────
@@ -102,91 +95,17 @@ func main() {
 	r.Use(middleware.RequestID)
 	r.Use(cors)
 
-	// W3C DID document
-	r.Get("/.well-known/did.json", func(w http.ResponseWriter, req *http.Request) {
-		w.Header().Set("Content-Type", "application/did+json")
-		w.Header().Set("Link", `</.well-known/did.json>; rel="self"`)
-		w.Write(state.didDoc.JSON())
-	})
-
-	// Conformance credential (self-issued VC)
-	r.Get("/credentials/conformance", func(w http.ResponseWriter, req *http.Request) {
-		w.Header().Set("Content-Type", "application/vc+json")
-		json.NewEncoder(w).Encode(state.conformVC)
-	})
-
-	// Verify a submitted VC against this node's public key
-	r.Post("/credentials/verify", func(w http.ResponseWriter, req *http.Request) {
-		var cred vc.FabricConformanceCredential
-		if err := json.NewDecoder(req.Body).Decode(&cred); err != nil {
-			writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid JSON"})
-			return
-		}
-		if err := vc.Verify(&cred, state.keyPair.PublicKey); err != nil {
-			writeJSON(w, http.StatusOK, map[string]interface{}{
-				"verified": false,
-				"error":    err.Error(),
-			})
-			return
-		}
-		writeJSON(w, http.StatusOK, map[string]interface{}{
-			"verified":           true,
-			"issuer":             cred.Issuer,
-			"verificationMethod": cred.Proof.VerificationMethod,
-		})
-	})
-
-	// DID resolution (W3C DID Resolution HTTP API)
-	r.Get("/did/{did}", func(w http.ResponseWriter, req *http.Request) {
-		resolved := chi.URLParam(req, "did")
-		_ = resolved
-		// Simplified: return this node's DID document regardless of input DID
-		// Production: resolve any did:web or did:webvh
-		w.Header().Set("Content-Type", "application/did+json")
-		w.Write(state.didDoc.JSON())
-	})
-
-	// Public key export (for external verification)
-	r.Get("/keys/node-key-1", func(w http.ResponseWriter, req *http.Request) {
-		writeJSON(w, http.StatusOK, map[string]string{
-			"id":                 keyID,
-			"type":               "Ed25519VerificationKey2020",
-			"publicKeyMultibase": state.keyPair.PublicKeyMultibase,
-		})
-	})
-
-	r.Get("/health", func(w http.ResponseWriter, req *http.Request) {
-		writeJSON(w, http.StatusOK, map[string]string{
-			"status":  "ok",
-			"service": "identity-service",
-			"did":     state.didDoc.ID,
-		})
-	})
-
-	r.Get("/", func(w http.ResponseWriter, req *http.Request) {
-		writeJSON(w, http.StatusOK, map[string]interface{}{
-			"service": "identity-service",
-			"did":     state.didDoc.ID,
-			"endpoints": map[string]string{
-				"didDocument":         "/.well-known/did.json",
-				"conformanceVC":       "/credentials/conformance",
-				"verifyVC":            "POST /credentials/verify",
-				"resolveAnyDID":       "/did/{did}",
-				"publicKey":           "/keys/node-key-1",
-				"health":              "/health",
-			},
-		})
-	})
+	r.Get("/.well-known/did.json",     handlers.DIDDocument(state))
+	r.Get("/credentials/conformance",  handlers.ConformanceVC(state))
+	r.Post("/credentials/verify",      handlers.VerifyVC(state))
+	r.Get("/did/{did}",                handlers.DIDResolve(state))
+	r.Get("/keys/node-key-1",          handlers.PublicKey(state))
+	r.Get("/health",                   handlers.Health(state))
+	r.Get("/",                         handlers.Index(state))
 
 	port := getEnv("PORT", "8083")
-	log.Printf("identity-service listening on :%s (DID: %s)", port, state.didDoc.ID)
+	log.Printf("identity-service listening on :%s (DID: %s)", port, didDoc.ID)
 	log.Fatal(http.ListenAndServe(":"+port, r))
-}
-
-func writeJSON(w http.ResponseWriter, status int, v interface{}) {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(status)
-	json.NewEncoder(w).Encode(v)
 }
 
 func cors(next http.Handler) http.Handler {
