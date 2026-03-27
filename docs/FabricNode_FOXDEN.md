@@ -50,9 +50,15 @@ The ingest endpoint (`POST /foxden/ingest`) pulls a FOXDEN record, converts it t
 
 ### Glossary:
 
-**What is a Graph IRI?**
+* **VoID**: Vocabulary for describing RDF datasets and their access points (e.g., SPARQL endpoints) for discovery and federation.
+* **PROF**: W3C Profiles Vocabulary used to describe and relate profiles, constraints, and representations of a resource.
+* **SHACL**: A W3C standard for validating RDF data against a set of constraints (shapes).
+* **SPARQL**: A W3C query language and protocol for retrieving and manipulating RDF data.
+* **VC (Verifiable Credential)**: A tamper-evident digital credential whose authenticity can be cryptographically verified.
+* **DID (Dataset Identifier)**: A unique identifier used to reference a specific dataset within a system or catalog.
+* **W3C LDN (Linked Data Notifications)**: A protocol for sending and receiving notifications between web resources using Linked Data principles.
 
-IRI stands for Internationalized Resource Identifier — essentially a URL that names a thing rather than necessarily locating it. In RDF, a *named graph* is a container that groups a set of triples together under one IRI so you can talk about that whole set as a unit, query just that subset, or track where triples came from.
+- **IRI** stands for Internationalized Resource Identifier — essentially a URL that names a thing rather than necessarily locating it. In RDF, a *named graph* is a container that groups a set of triples together under one IRI so you can talk about that whole set as a unit, query just that subset, or track where triples came from.
 
 In the FabricNode store, every dataset gets its own named graph:
 
@@ -61,5 +67,4 @@ http://chess.cornell.edu/graph/3a/btr=test-123-a/cycle=2026-1/sample_name=PAT-..
 ```
 
 That IRI is the graph's identity. When you query `/beamlines/3a/sparql` the service restricts results to graphs whose IRI starts with `http://chess.cornell.edu/graph/3a/` — that's how beamline scoping works. Without named graphs you'd have one undifferentiated pile of triples with no way to say "show me only what belongs to this dataset."
-
 
