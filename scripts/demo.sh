@@ -12,8 +12,13 @@ NOTIFY="http://localhost:8084"
 JTYPE="Content-Type: application/ld+json"
 JJSON="Content-Type: application/json"
 
-sep() { printf "\n\033[1;36m══ %s ══\033[0m\n" "$1"; }
-ok()  { printf "\033[32m✓\033[0m %s\n" "$1"; }
+# Beamline and dataset DID used throughout the write/query demos.
+BEAMLINE="id1"
+DID="/beamline=id1/btr=btr001/cycle=2024-3/sample_name=silicon-std"
+DID_ENC=$(python3 -c "import urllib.parse,sys; print(urllib.parse.quote(sys.argv[1], safe=''))" "$DID")
+
+sep()  { printf "\n\033[1;36m══ %s ══\033[0m\n" "$1"; }
+ok()   { printf "\033[32m✓\033[0m %s\n" "$1"; }
 
 # ── Health checks ─────────────────────────────────────────────────────────────
 sep "Health checks"
@@ -40,12 +45,28 @@ curl -s "$CATALOG/.well-known/shacl"
 sep "L4 — SPARQL examples catalog"
 curl -s "$CATALOG/.well-known/sparql-examples"
 
-# ── Data: query beamlines ─────────────────────────────────────────────────────
-sep "Data — list named graphs"
+# ── Catalog: beamline + dataset discovery ────────────────────────────────────
+sep "Catalog — list beamlines"
+curl -s "$CATALOG/catalog/beamlines" | jq .
+
+sep "Catalog — datasets for beamline $BEAMLINE"
+echo "$CATALOG/catalog/beamlines/$BEAMLINE/datasets"
+curl -s "$CATALOG/catalog/beamlines/$BEAMLINE/datasets" | jq .
+
+# ── Data: global query ────────────────────────────────────────────────────────
+sep "Data — list all named graphs"
 curl -s "$DATA/graphs" | jq .
 
-sep "Data — all beamline triples"
-curl -s "$DATA/sparql?g=http://chess.cornell.edu/graph/beamlines" | jq '.results.bindings | length'
+sep "Data — list named graphs for beamline $BEAMLINE"
+curl -s "$DATA/beamlines/$BEAMLINE/graphs" | jq .
+
+sep "Data — beamline-scoped SPARQL (all triples for $BEAMLINE)"
+curl -s "$DATA/beamlines/$BEAMLINE/sparql" \
+  | jq '.results.bindings | length'
+
+sep "Data — global SPARQL: beamline descriptor graph"
+curl -s "$DATA/sparql?g=http://chess.cornell.edu/graph/beamlines" \
+  | jq '.results.bindings | length'
 
 sep "Data — describe beamline id1"
 curl -s "$DATA/sparql?describe=http://chess.cornell.edu/beamline/id1" | jq .
@@ -53,34 +74,78 @@ curl -s "$DATA/sparql?describe=http://chess.cornell.edu/beamline/id1" | jq .
 sep "Data — keyword search for 'crystallography'"
 curl -s "$DATA/sparql?search=crystallography" | jq .
 
-sep "Data — SOSA observations"
+sep "Data — SOSA observations (global)"
 curl -s "$DATA/sparql?p=http://www.w3.org/1999/02/22-rdf-syntax-ns%23type&o=http://www.w3.org/ns/sosa/Observation" \
   | jq '.results.bindings | length'
 
+# ── Data: dataset-scoped SPARQL ───────────────────────────────────────────────
+sep "Data — dataset-scoped SPARQL for DID: $DID"
+curl -s "$DATA/beamlines/$BEAMLINE/datasets/$DID_ENC/sparql" \
+  | jq '.results.bindings | length'
+
 # ── Data: SHACL-validated write ───────────────────────────────────────────────
-sep "Data — insert valid observation (SHACL-validated)"
-curl -s -X POST "$DATA/triples" \
+sep "Data — insert valid observation into $BEAMLINE / $DID"
+curl -s -X POST "$DATA/beamlines/$BEAMLINE/datasets/$DID_ENC/triples" \
   -H "$JJSON" \
   -d '[
-    {"subject":"http://chess.cornell.edu/observation/demo-01","predicate":"http://www.w3.org/1999/02/22-rdf-syntax-ns#type","object":"http://www.w3.org/ns/sosa/Observation","objectType":"uri","graph":"http://chess.cornell.edu/graph/observations"},
-    {"subject":"http://chess.cornell.edu/observation/demo-01","predicate":"http://www.w3.org/ns/sosa/resultTime","object":"2025-03-06T10:00:00Z^^http://www.w3.org/2001/XMLSchema#dateTime","objectType":"literal","graph":"http://chess.cornell.edu/graph/observations"},
-    {"subject":"http://chess.cornell.edu/observation/demo-01","predicate":"http://www.w3.org/ns/sosa/madeBySensor","object":"http://chess.cornell.edu/sensor/id1-detector-01","objectType":"uri","graph":"http://chess.cornell.edu/graph/observations"},
-    {"subject":"http://chess.cornell.edu/observation/demo-01","predicate":"http://www.w3.org/ns/sosa/observedProperty","object":"http://chess.cornell.edu/property/lattice-parameter-a","objectType":"uri","graph":"http://chess.cornell.edu/graph/observations"}
+    {
+      "subject":    "http://chess.cornell.edu/observation/demo-01",
+      "predicate":  "http://www.w3.org/1999/02/22-rdf-syntax-ns#type",
+      "object":     "http://www.w3.org/ns/sosa/Observation",
+      "objectType": "uri"
+    },
+    {
+      "subject":    "http://chess.cornell.edu/observation/demo-01",
+      "predicate":  "http://www.w3.org/ns/sosa/resultTime",
+      "object":     "2025-03-06T10:00:00Z^^http://www.w3.org/2001/XMLSchema#dateTime",
+      "objectType": "literal"
+    },
+    {
+      "subject":    "http://chess.cornell.edu/observation/demo-01",
+      "predicate":  "http://www.w3.org/ns/sosa/madeBySensor",
+      "object":     "http://chess.cornell.edu/sensor/id1-detector-01",
+      "objectType": "uri"
+    },
+    {
+      "subject":    "http://chess.cornell.edu/observation/demo-01",
+      "predicate":  "http://www.w3.org/ns/sosa/observedProperty",
+      "object":     "http://chess.cornell.edu/property/lattice-parameter-a",
+      "objectType": "uri"
+    }
   ]' | jq .
 
-sep "Data — insert INVALID observation (missing resultTime → SHACL error)"
-curl -s -X POST "$DATA/triples" \
+sep "Data — dry-run validate INVALID observation (missing resultTime)"
+curl -s -X POST "$DATA/beamlines/$BEAMLINE/datasets/$DID_ENC/validate" \
   -H "$JJSON" \
   -d '[
-    {"subject":"http://chess.cornell.edu/observation/bad-01","predicate":"http://www.w3.org/1999/02/22-rdf-syntax-ns#type","object":"http://www.w3.org/ns/sosa/Observation","objectType":"uri","graph":"http://chess.cornell.edu/graph/observations"}
+    {
+      "subject":    "http://chess.cornell.edu/observation/bad-01",
+      "predicate":  "http://www.w3.org/1999/02/22-rdf-syntax-ns#type",
+      "object":     "http://www.w3.org/ns/sosa/Observation",
+      "objectType": "uri"
+    }
+  ]' | jq .
+
+sep "Data — insert INVALID observation (missing resultTime → SHACL rejected)"
+curl -s -X POST "$DATA/beamlines/$BEAMLINE/datasets/$DID_ENC/triples" \
+  -H "$JJSON" \
+  -d '[
+    {
+      "subject":    "http://chess.cornell.edu/observation/bad-01",
+      "predicate":  "http://www.w3.org/1999/02/22-rdf-syntax-ns#type",
+      "object":     "http://www.w3.org/ns/sosa/Observation",
+      "objectType": "uri"
+    }
   ]' | jq .
 
 # ── Identity ──────────────────────────────────────────────────────────────────
 sep "Identity — DID document"
-curl -s "$IDENTITY/.well-known/did.json" | jq '{id:.id,services:[.service[].type]}'
+curl -s "$IDENTITY/.well-known/did.json" \
+  | jq '{id:.id,services:[.service[].type]}'
 
 sep "Identity — FabricConformanceCredential"
-curl -s "$IDENTITY/credentials/conformance" | jq '{id:.id,issuer:.issuer,type:.type}'
+curl -s "$IDENTITY/credentials/conformance" \
+  | jq '{id:.id,issuer:.issuer,type:.type}'
 
 sep "Identity — round-trip VC verification"
 CRED=$(curl -s "$IDENTITY/credentials/conformance")
@@ -88,15 +153,19 @@ echo "$CRED" | curl -s -X POST "$IDENTITY/credentials/verify" \
   -H "$JJSON" -d @- | jq .
 
 # ── Notifications (LDN inbox) ─────────────────────────────────────────────────
-sep "Notifications — send new-run event"
+sep "Notifications — send new-run event (scoped to beamline $BEAMLINE)"
 curl -s -X POST "$NOTIFY/inbox" \
   -H "$JTYPE" \
   -d '{
     "@context": "https://www.w3.org/ns/activitystreams",
     "@type":    "chess:NewRun",
     "actor":    "http://chess.cornell.edu/sensor/id1-detector-01",
-    "object":   {"chess:runNumber": 1027, "chess:beamline": "http://chess.cornell.edu/beamline/id1"},
-    "target":   "http://chess.cornell.edu/dataset/beamline-id1"
+    "object": {
+      "chess:runNumber": 1027,
+      "chess:beamline":  "http://chess.cornell.edu/beamline/id1",
+      "chess:did":       "/beamline=id1/btr=btr001/cycle=2024-3/sample_name=silicon-std"
+    },
+    "target": "http://chess.cornell.edu/beamline/id1"
   }' | jq .
 
 sep "Notifications — send trust-gap (PendingTask)"
@@ -117,9 +186,12 @@ curl -s "$NOTIFY/inbox/stats" | jq .
 
 printf "\n\033[1;32m✅  Demo complete.\033[0m\n\n"
 printf "All four fabric layers demonstrated:\n"
-printf "  L1 VoID + PROF    → catalog:8081/.well-known/void\n"
-printf "  L3 SHACL          → catalog:8081/.well-known/shacl\n"
-printf "  L4 SPARQL examples → catalog:8081/.well-known/sparql-examples\n"
-printf "  Data              → data:8082/sparql\n"
-printf "  Identity (DID+VC) → identity:8083/.well-known/did.json\n"
-printf "  Notifications(LDN)→ notifications:8084/inbox\n"
+printf "  L1 VoID + PROF      → catalog:8081/.well-known/void\n"
+printf "  L3 SHACL            → catalog:8081/.well-known/shacl\n"
+printf "  L4 SPARQL examples  → catalog:8081/.well-known/sparql-examples\n"
+printf "  Catalog beamlines   → catalog:8081/catalog/beamlines\n"
+printf "  Data (global)       → data:8082/sparql\n"
+printf "  Data (beamline)     → data:8082/beamlines/{id}/sparql\n"
+printf "  Data (dataset)      → data:8082/beamlines/{id}/datasets/{did}/sparql\n"
+printf "  Identity (DID+VC)   → identity:8083/.well-known/did.json\n"
+printf "  Notifications (LDN) → notify:8084/inbox\n"
