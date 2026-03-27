@@ -87,3 +87,27 @@ or produce datasets. Below you can see a hierarchical structure:
  ├── /catalog/beamline-id3
  └── /catalog/beamline-fast
  ```
+
+ ---
+
+# Catalog Service → Data Service Integration
+
+## Flow
+
+1. User registers dataset under beamline
+2. Catalog extracts:
+   - beamlineId (e.g. id3a)
+   - DID path
+3. Catalog calls data-service
+
+## Example
+
+```
+SendTriples(
+    "http://localhost:8081",
+    "id3a",
+    "/beamline=id3a/btr=val123/cycle=123/sample_name=bla",
+    "<rdf triples>"
+)
+```
+
