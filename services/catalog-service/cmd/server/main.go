@@ -37,8 +37,12 @@ func main() {
 	// ── L4: SPARQL examples catalog ─────────────────────────────────────────
 	r.Get("/.well-known/sparql-examples", handlers.SPARQLExamples(cfg))
 
+	// bealines end-point
+	r.Get("/catalog/beamlines", handlers.Beamlines(cfg))
+
 	// datasets end-point of specific beamline
-	r.Get("/catalog/{beamline}/datasets", handlers.Datasets(cfg))
+	r.Get("/catalog/beamlines", handlers.Beamlines(cfg))
+	r.Get("/catalog/beamlines/{beamline}/datasets", handlers.Datasets(cfg))
 
 	// ── Health + info ────────────────────────────────────────────────────────
 	r.Get("/health", handlers.Health(cfg))

@@ -120,6 +120,7 @@ func beamlineEntries(cfg void.NodeConfig) []map[string]any {
 // and map each graph IRI back to a DCAT dataset entry.
 func datasetsForBeamline(cfg void.NodeConfig, bl model.BeamlineID) []map[string]any {
 	// Example DIDs for this beamline — in production, query data-service.
+	// TODO: call data-service to obtain dids via FOXDEN look-up
 	dids := []model.DatasetDID{
 		model.DatasetDID(fmt.Sprintf("/beamline=%s/btr=btr001/cycle=2024-3/sample_name=silicon-std", bl)),
 		model.DatasetDID(fmt.Sprintf("/beamline=%s/btr=btr002/cycle=2024-3/sample_name=lysozyme-1", bl)),
