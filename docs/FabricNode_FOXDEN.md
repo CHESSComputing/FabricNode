@@ -5,6 +5,9 @@ FOXDEN is a *document store for domain metadata*. It knows that experiment `test
 
 FabricNode is a *knowledge graph and semantic interoperability layer*. It doesn't replace FOXDEN; it consumes it. Once a FOXDEN record is ingested as RDF triples, the graph can answer questions that span records and services: "find all datasets from cycle 2026-1 where the technique includes HEDM and the beam energy was above 40 keV, and attach their provenance chains." FOXDEN can't do that without custom query logic for every new combination. SPARQL can do it with one query because all the facts share a common representation.
 
+Here is pictorial representations of two systems:
+![](images/FOXDEN_FabricNode_integration.png)
+
 **How provenance fits in**
 
 FOXDEN's provenance service captures *who did what* in the beamline context — which user submitted the BTR, which staff scientist ran the experiment, which processing steps were applied. In the FabricNode, that provenance gets converted to W3C PROV-O triples (`prov:wasGeneratedBy`, `prov:wasAssociatedWith`, `prov:used`) and stored in the same named graph as the metadata. This means a SPARQL query can simultaneously ask about a dataset's physics *and* its chain of custody — something impossible when provenance and metadata live in separate JSON documents.
