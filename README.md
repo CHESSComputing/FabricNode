@@ -79,7 +79,7 @@ An LLM-based agent following the Knowledge Fabric progressive disclosure pattern
 
 ```
 1. GET /.well-known/void        (catalog:8081)
-   → learns 3 beamlines exist; finds SPARQL endpoint URL
+   → learns which CHESS beamlines exist; finds SPARQL endpoint URL
 
 2. GET /.well-known/shacl       (catalog:8081)
    → learns Observations need resultTime, madeBySensor, observedProperty
@@ -105,46 +105,22 @@ context to answer its query.
 ```
 FabricNode/
 ├── CONCEPT.md                   ← Federated Knowledge Fabric concept summary
-├── docker-compose.yml
-├── Makefile
-├── scripts/
-│   └── demo.sh                  ← end-to-end curl demo
 └── services/
     ├── catalog-service/         ← L1/L3/L4 self-description
-    │   ├── cmd/server/main.go
     │   ├── internal/
     │   │   ├── rdf/             ← content negotiation
     │   │   └── void/            ← VoID, PROF, SHACL, SPARQL examples generators
-    │   ├── go.mod
-    │   ├── Makefile
-    │   ├── Dockerfile
-    │   └── README.md
     ├── data-service/            ← SPARQL + SHACL-validated writes
-    │   ├── cmd/server/main.go
     │   ├── internal/
     │   │   ├── store/           ← in-memory triple store with named graphs
     │   │   ├── sparql/          ← SPARQL query handler
     │   │   └── shacl/           ← ObservationShape validator
-    │   ├── go.mod
-    │   ├── Makefile
-    │   ├── Dockerfile
-    │   └── README.md
     ├── identity-service/        ← DID + VC identity layer
-    │   ├── cmd/server/main.go
     │   ├── internal/
     │   │   ├── did/             ← DID document generation (Ed25519)
     │   │   ├── vc/              ← Verifiable Credential issuance + verification
     │   │   └── integrity/       ← digestMultibase / digestSRI content checks
-    │   ├── go.mod
-    │   ├── Makefile
-    │   ├── Dockerfile
-    │   └── README.md
     └── notification-service/    ← W3C LDN inbox
-        ├── cmd/server/main.go
         ├── internal/
         │   └── store/           ← notification inbox store
-        ├── go.mod
-        ├── Makefile
-        ├── Dockerfile
-        └── README.md
 ```
