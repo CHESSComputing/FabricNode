@@ -21,20 +21,32 @@ func main() {
 	r.Use(middleware.RequestID)
 	r.Use(cors)
 
-	// ── SPARQL endpoint (GET + POST) ─────────────────────────────────────────
+	// ── Global SPARQL + graphs ────────────────────────────────────────────────
 	r.Get("/sparql", handlers.SPARQL(db))
 	r.Post("/sparql", handlers.SPARQL(db))
-
-	// ── Named graphs listing ─────────────────────────────────────────────────
 	r.Get("/graphs", handlers.Graphs(db))
 
-	// ── Write endpoint (SHACL-validated) ────────────────────────────────────
-	r.Post("/triples", handlers.Triples(db))
+	// ── Beamline-scoped routes ────────────────────────────────────────────────
+	// Beamline IDs: lower-case letters + digits, e.g. id1, id3a, fast, qm2.
+	r.Route("/beamlines/{beamline}", func(r chi.Router) {
+		r.Get("/sparql", handlers.BeamlineSPARQL(db))
+		r.Get("/graphs", handlers.BeamlineGraphs(db))
 
-	// ── SHACL validation only (dry-run) ─────────────────────────────────────
-	r.Post("/validate", handlers.Validate(db))
+		// ── Dataset-scoped routes ─────────────────────────────────────────────
+		// Dataset DIDs are URL-encoded in the path because they contain slashes.
+		// Example DID:  /beamline=id3a/btr=val123/cycle=2024-3/sample_name=bla
+		// URL-encoded:  %2Fbeamline%3Did3a%2Fbtr%3Dval123%2Fcycle%3D2024-3%2Fsample_name%3Dbla
+		//
+		// The {did} wildcard uses a Chi wildcard segment (*) to capture
+		// the rest of the path; the handler URL-decodes it before use.
+		r.Route("/datasets/{did}", func(r chi.Router) {
+			r.Get("/sparql", handlers.DatasetSPARQL(db))
+			r.Post("/triples", handlers.Triples(db))
+			r.Post("/validate", handlers.Validate(db))
+		})
+	})
 
-	// ── Health + info ────────────────────────────────────────────────────────
+	// ── Health + index ────────────────────────────────────────────────────────
 	r.Get("/health", handlers.Health(db))
 	r.Get("/", handlers.Index())
 

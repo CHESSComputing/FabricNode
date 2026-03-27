@@ -26,7 +26,8 @@ var templateFS embed.FS
 type NodeConfig struct {
 	BaseURL  string // e.g. https://chess-node.example.org
 	NodeID   string // e.g. chess-node
-	NodeName string // human label
+	NodeName       string // human label
+	DataServiceURL string // e.g. http://localhost:8082
 }
 
 // DefaultConfig returns a config suitable for local development.

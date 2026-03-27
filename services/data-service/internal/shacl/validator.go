@@ -1,15 +1,13 @@
 // Package shacl provides structural validation of incoming triples against
-// the CHESS ObservationShape and BeamlineShape rules.
-//
-// This is a hand-written subset of SHACL 1.2 validation. In production,
-// delegate to a full SHACL validator (e.g. a Java/Python sidecar or
-// Apache Jena Shapes).
+// the CHESS ObservationShape rules, with optional beamline/dataset scope
+// enforcement.
 package shacl
 
 import (
 	"fmt"
 	"strings"
 
+	"github.com/CHESSComputing/FabricNode/pkg/model"
 	"github.com/CHESSComputing/FabricNode/services/data-service/internal/store"
 )
 
@@ -17,6 +15,8 @@ const (
 	nsRDF  = "http://www.w3.org/1999/02/22-rdf-syntax-ns#"
 	nsSOSA = "http://www.w3.org/ns/sosa/"
 	nsXSD  = "http://www.w3.org/2001/XMLSchema#"
+
+	nsCHESS = "http://chess.cornell.edu/"
 )
 
 // ValidationResult holds the outcome of a SHACL shape check.
@@ -25,43 +25,59 @@ type ValidationResult struct {
 	Errors   []string `json:"errors,omitempty"`
 }
 
-// ValidateObservation checks that the supplied triples satisfy fabric:ObservationShape.
-// The triples slice must represent a single sosa:Observation resource.
+// ValidateObservation checks that the supplied triples satisfy
+// fabric:ObservationShape.  The triples slice must represent one or more
+// sosa:Observation resources.
 func ValidateObservation(triples []store.Triple) ValidationResult {
 	r := ValidationResult{Conforms: true}
 	subjectTriples := indexBySubject(triples)
 
 	for subj, props := range subjectTriples {
-		// Must be typed sosa:Observation
 		types := getValues(props, nsRDF+"type")
 		if !contains(types, nsSOSA+"Observation") {
-			continue // not an observation — skip
+			continue
 		}
-		// sh:minCount 1 for sosa:resultTime
 		if len(getValues(props, nsSOSA+"resultTime")) == 0 {
-			r.Conforms = false
-			r.Errors = append(r.Errors,
-				fmt.Sprintf("<%s>: missing required sosa:resultTime", subj))
+			r.fail(fmt.Sprintf("<%s>: missing required sosa:resultTime", subj))
 		}
-		// sosa:resultTime must look like an xsd:dateTime (contains "T")
 		for _, v := range getValues(props, nsSOSA+"resultTime") {
 			if !strings.Contains(v, "T") {
-				r.Conforms = false
-				r.Errors = append(r.Errors,
-					fmt.Sprintf("<%s>: sosa:resultTime value %q does not look like xsd:dateTime", subj, v))
+				r.fail(fmt.Sprintf("<%s>: sosa:resultTime %q is not xsd:dateTime", subj, v))
 			}
 		}
-		// sh:minCount 1 for sosa:madeBySensor
 		if len(getValues(props, nsSOSA+"madeBySensor")) == 0 {
-			r.Conforms = false
-			r.Errors = append(r.Errors,
-				fmt.Sprintf("<%s>: missing required sosa:madeBySensor", subj))
+			r.fail(fmt.Sprintf("<%s>: missing required sosa:madeBySensor", subj))
 		}
-		// sh:minCount 1 for sosa:observedProperty
 		if len(getValues(props, nsSOSA+"observedProperty")) == 0 {
-			r.Conforms = false
-			r.Errors = append(r.Errors,
-				fmt.Sprintf("<%s>: missing required sosa:observedProperty", subj))
+			r.fail(fmt.Sprintf("<%s>: missing required sosa:observedProperty", subj))
+		}
+	}
+	return r
+}
+
+// ValidateForDataset runs observation validation AND checks that every
+// sosa:madeBySensor value is hosted by the declared beamline.
+// This is the preferred entry point when writing via a beamline-scoped route.
+func ValidateForDataset(ref model.DatasetRef, triples []store.Triple) ValidationResult {
+	r := ValidateObservation(triples)
+	if !r.Conforms {
+		return r
+	}
+
+	// Verify sensor IRIs carry the correct beamline prefix.
+	blPrefix := nsCHESS + "sensor/" + strings.ToLower(string(ref.Beamline))
+	subjectTriples := indexBySubject(triples)
+	for subj, props := range subjectTriples {
+		types := getValues(props, nsRDF+"type")
+		if !contains(types, nsSOSA+"Observation") {
+			continue
+		}
+		for _, sensor := range getValues(props, nsSOSA+"madeBySensor") {
+			if !strings.HasPrefix(sensor, blPrefix) {
+				r.fail(fmt.Sprintf(
+					"<%s>: sensor <%s> does not belong to beamline %q (expected prefix %s)",
+					subj, sensor, ref.Beamline, blPrefix))
+			}
 		}
 	}
 	return r
@@ -70,6 +86,11 @@ func ValidateObservation(triples []store.Triple) ValidationResult {
 // ──────────────────────────────────────────────────────────────────────────────
 // Helpers
 // ──────────────────────────────────────────────────────────────────────────────
+
+func (r *ValidationResult) fail(msg string) {
+	r.Conforms = false
+	r.Errors = append(r.Errors, msg)
+}
 
 func indexBySubject(triples []store.Triple) map[string][]store.Triple {
 	idx := make(map[string][]store.Triple)
