@@ -7,8 +7,6 @@ import (
 	"github.com/CHESSComputing/FabricNode/services/data-service/internal/store"
 )
 
-// Health returns service liveness with graph count.
-// GET /health
 func Health(db *store.Store) http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
@@ -16,8 +14,6 @@ func Health(db *store.Store) http.HandlerFunc {
 	}
 }
 
-// Index returns the service directory.
-// GET /
 func Index() http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
@@ -31,11 +27,14 @@ func Index() http.HandlerFunc {
     "graphs (beamline)":        "GET /beamlines/{beamline}/graphs",
     "triples (insert)":         "POST /beamlines/{beamline}/datasets/{did}/triples",
     "triples (validate)":       "POST /beamlines/{beamline}/datasets/{did}/validate",
+    "foxden (list datasets)":   "GET /beamlines/{beamline}/foxden/datasets[?cycle=<val>]",
+    "foxden (one dataset)":     "GET /beamlines/{beamline}/datasets/{did}/foxden",
+    "foxden (ingest to RDF)":   "POST /beamlines/{beamline}/datasets/{did}/foxden/ingest",
     "health":                   "GET /health"
   },
   "notes": [
-    "Beamline IDs: lower-case letters + digits, e.g. id1 id3a fast qm2",
-    "Dataset DIDs are URL-encoded in path: /beamline=id3a/btr=val/cycle=2024-3/sample_name=bla"
+    "Beamline IDs: lower-case letters + digits, e.g. id1 id3a fast 3a",
+    "Dataset DIDs are URL-encoded in path: %2Fbeamline%3D3a%2Fbtr%3D..."
   ]
 }`)
 	}

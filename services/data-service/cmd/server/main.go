@@ -8,12 +8,18 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 
+	"github.com/CHESSComputing/FabricNode/services/data-service/internal/foxden"
 	"github.com/CHESSComputing/FabricNode/services/data-service/internal/handlers"
 	"github.com/CHESSComputing/FabricNode/services/data-service/internal/store"
 )
 
 func main() {
 	db := store.New()
+
+	foxdenCfg := handlers.FoxdenConfig{
+		Client: foxden.NewClient(getEnv("FOXDEN_URL", "http://localhost:8300")),
+		Store:  db,
+	}
 
 	r := chi.NewRouter()
 	r.Use(middleware.Logger)
@@ -27,22 +33,26 @@ func main() {
 	r.Get("/graphs", handlers.Graphs(db))
 
 	// ── Beamline-scoped routes ────────────────────────────────────────────────
-	// Beamline IDs: lower-case letters + digits, e.g. id1, id3a, fast, qm2.
 	r.Route("/beamlines/{beamline}", func(r chi.Router) {
 		r.Get("/sparql", handlers.BeamlineSPARQL(db))
 		r.Get("/graphs", handlers.BeamlineGraphs(db))
 
+		// FOXDEN metadata listing for this beamline (?cycle=<val> optional)
+		r.Get("/foxden/datasets", handlers.FoxdenDatasets(foxdenCfg))
+
 		// ── Dataset-scoped routes ─────────────────────────────────────────────
-		// Dataset DIDs are URL-encoded in the path because they contain slashes.
-		// Example DID:  /beamline=id3a/btr=val123/cycle=2024-3/sample_name=bla
-		// URL-encoded:  %2Fbeamline%3Did3a%2Fbtr%3Dval123%2Fcycle%3D2024-3%2Fsample_name%3Dbla
-		//
-		// The {did} wildcard uses a Chi wildcard segment (*) to capture
-		// the rest of the path; the handler URL-decodes it before use.
+		// {did} is URL-encoded because DIDs contain slashes and equals signs.
+		// Example: %2Fbeamline%3D3a%2Fbtr%3Dtest-123-a%2Fcycle%3D2026-1%2Fsample_name%3Dbla
 		r.Route("/datasets/{did}", func(r chi.Router) {
 			r.Get("/sparql", handlers.DatasetSPARQL(db))
 			r.Post("/triples", handlers.Triples(db))
 			r.Post("/validate", handlers.Validate(db))
+
+			// FOXDEN metadata for this specific dataset
+			r.Get("/foxden", handlers.FoxdenDataset(foxdenCfg))
+
+			// Fetch from FOXDEN and store as RDF triples
+			r.Post("/foxden/ingest", handlers.FoxdenIngest(foxdenCfg))
 		})
 	})
 
@@ -51,7 +61,7 @@ func main() {
 	r.Get("/", handlers.Index())
 
 	port := getEnv("PORT", "8082")
-	log.Printf("data-service listening on :%s", port)
+	log.Printf("data-service listening on :%s (foxden: %s)", port, getEnv("FOXDEN_URL", "http://localhost:8300"))
 	log.Fatal(http.ListenAndServe(":"+port, r))
 }
 
