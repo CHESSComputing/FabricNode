@@ -27,7 +27,7 @@ import (
 type BeamlineID string
 
 // beamlinePattern accepts lower-case letters and digits, length 1-16.
-var beamlinePattern = regexp.MustCompile(`^[a-z][a-z0-9]{0,15}$`)
+var beamlinePattern = regexp.MustCompile(`^[a-z0-9][a-z0-9]{0,15}$`)
 
 // Valid reports whether b is a well-formed beamline identifier.
 func (b BeamlineID) Valid() bool {
