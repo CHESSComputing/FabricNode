@@ -5,22 +5,20 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
-	"regexp"
 
 	"github.com/CHESSComputing/FabricNode/pkg/model"
 	"github.com/CHESSComputing/FabricNode/services/catalog-service/internal/void"
 	"github.com/go-chi/chi/v5"
 )
 
-// beamlinePattern matches valid CHESS beamline IDs (lower-case letters + digits).
-var beamlinePattern = regexp.MustCompile(`^[a-z][a-z0-9]{0,15}$`)
+// TODO: should come from configuration of FabricNode
 
 // knownBeamlines is the registry of beamlines served by this node.
 // In production, load from config or discover via the data-service.
 var knownBeamlines = []model.Beamline{
 	{ID: "id1", Label: "Beamline ID1 — X-ray Diffraction",
 		Type: "x-ray-diffraction", Location: "CHESS Wilson Laboratory"},
-	{ID: "id3a", Label: "Beamline ID3A — Protein Crystallography",
+	{ID: "3a", Label: "Beamline ID3A — Protein Crystallography",
 		Type: "protein-crystallography"},
 	{ID: "fast", Label: "Beamline FAST — Time-Resolved Scattering",
 		Type: "time-resolved-scattering"},
@@ -37,10 +35,10 @@ func Beamlines(cfg void.NodeConfig) http.HandlerFunc {
 				"dct":   "http://purl.org/dc/terms/",
 				"chess": "http://chess.cornell.edu/ns#",
 			},
-			"@id":           fmt.Sprintf("%s/catalog", cfg.BaseURL),
-			"@type":         "dcat:Catalog",
-			"dcat:service":  fmt.Sprintf("%s/catalog/beamlines", cfg.BaseURL),
-			"dcat:dataset":  beamlineEntries(cfg),
+			"@id":          fmt.Sprintf("%s/catalog", cfg.BaseURL),
+			"@type":        "dcat:Catalog",
+			"dcat:service": fmt.Sprintf("%s/catalog/beamlines", cfg.BaseURL),
+			"dcat:dataset": beamlineEntries(cfg),
 		}
 		w.Header().Set("Content-Type", "application/ld+json")
 		enc := json.NewEncoder(w)
@@ -74,9 +72,9 @@ func Datasets(cfg void.NodeConfig) http.HandlerFunc {
 				"dcat": "http://www.w3.org/ns/dcat#",
 				"dct":  "http://purl.org/dc/terms/",
 			},
-			"@id":           fmt.Sprintf("%s/catalog/beamlines/%s", cfg.BaseURL, bl),
-			"@type":         "dcat:Catalog",
-			"dcat:dataset":  datasets,
+			"@id":          fmt.Sprintf("%s/catalog/beamlines/%s", cfg.BaseURL, bl),
+			"@type":        "dcat:Catalog",
+			"dcat:dataset": datasets,
 		}
 		w.Header().Set("Content-Type", "application/ld+json")
 		enc := json.NewEncoder(w)
@@ -102,11 +100,11 @@ func beamlineEntries(cfg void.NodeConfig) []map[string]any {
 	out := make([]map[string]any, 0, len(knownBeamlines))
 	for _, bl := range knownBeamlines {
 		out = append(out, map[string]any{
-			"@id":             fmt.Sprintf("%s/catalog/beamlines/%s", cfg.BaseURL, bl.ID),
-			"@type":           "dcat:Catalog",
-			"dct:title":       bl.Label,
-			"chess:blType":    bl.Type,
-			"dcat:dataset":    fmt.Sprintf("%s/catalog/beamlines/%s/datasets", cfg.BaseURL, bl.ID),
+			"@id":          fmt.Sprintf("%s/catalog/beamlines/%s", cfg.BaseURL, bl.ID),
+			"@type":        "dcat:Catalog",
+			"dct:title":    bl.Label,
+			"chess:blType": bl.Type,
+			"dcat:dataset": fmt.Sprintf("%s/catalog/beamlines/%s/datasets", cfg.BaseURL, bl.ID),
 		})
 	}
 	return out
@@ -131,11 +129,11 @@ func datasetsForBeamline(cfg void.NodeConfig, bl model.BeamlineID) []map[string]
 	for _, did := range dids {
 		encodedDID := url.QueryEscape(string(did))
 		entry := map[string]any{
-			"@id":          fmt.Sprintf("%s/catalog/beamlines/%s/datasets/%s", cfg.BaseURL, bl, encodedDID),
-			"@type":        "dcat:Dataset",
-			"dct:title":    string(did),
+			"@id":       fmt.Sprintf("%s/catalog/beamlines/%s/datasets/%s", cfg.BaseURL, bl, encodedDID),
+			"@type":     "dcat:Dataset",
+			"dct:title": string(did),
 			"dcat:distribution": map[string]any{
-				"@type":        "dcat:Distribution",
+				"@type": "dcat:Distribution",
 				"dcat:accessURL": fmt.Sprintf(
 					"%s/beamlines/%s/datasets/%s/sparql",
 					dataURL, bl, encodedDID),
