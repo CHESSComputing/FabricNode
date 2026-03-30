@@ -4,21 +4,55 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strings"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 
+	fabricconfig "github.com/CHESSComputing/FabricNode/pkg/config"
 	"github.com/CHESSComputing/FabricNode/services/data-service/internal/foxden"
 	"github.com/CHESSComputing/FabricNode/services/data-service/internal/handlers"
 	"github.com/CHESSComputing/FabricNode/services/data-service/internal/store"
 )
 
+// GetToken returns a token from either an environment variable
+// or a file path (based on tokenSource value).
+func GetToken(tokenSource string) string {
+	if tokenSource == "" {
+		panic("tokenSource is empty")
+	}
+
+	// 1. Try environment variable
+	if val, ok := os.LookupEnv(tokenSource); ok && strings.TrimSpace(val) != "" {
+		return strings.TrimSpace(val)
+	}
+
+	// 2. Otherwise treat as file path
+	data, err := os.ReadFile(tokenSource)
+	if err == nil {
+		token := strings.TrimSpace(string(data))
+		return token
+	}
+
+	return tokenSource
+}
+
 func main() {
+	// ── Load configuration ───────────────────────────────────────────────────
+	cfg, err := fabricconfig.Load(getEnv("FABRIC_CONFIG", ""))
+	if err != nil {
+		log.Printf("data-service: config warning: %v — using defaults", err)
+	}
+
 	db := store.New()
 
 	foxdenCfg := handlers.FoxdenConfig{
-		Client: foxden.NewClient(getEnv("FOXDEN_URL", "http://localhost:8300")),
-		Store:  db,
+		Client: foxden.NewClientWithToken(
+			cfg.Foxden.MetadataURL,
+			GetToken(cfg.Foxden.Token),
+			cfg.Foxden.Timeout,
+		),
+		Store: db,
 	}
 
 	r := chi.NewRouter()
@@ -36,22 +70,13 @@ func main() {
 	r.Route("/beamlines/{beamline}", func(r chi.Router) {
 		r.Get("/sparql", handlers.BeamlineSPARQL(db))
 		r.Get("/graphs", handlers.BeamlineGraphs(db))
-
-		// FOXDEN metadata listing for this beamline (?cycle=<val> optional)
 		r.Get("/foxden/datasets", handlers.FoxdenDatasets(foxdenCfg))
 
-		// ── Dataset-scoped routes ─────────────────────────────────────────────
-		// {did} is URL-encoded because DIDs contain slashes and equals signs.
-		// Example: %2Fbeamline%3D3a%2Fbtr%3Dtest-123-a%2Fcycle%3D2026-1%2Fsample_name%3Dbla
 		r.Route("/datasets/{did}", func(r chi.Router) {
 			r.Get("/sparql", handlers.DatasetSPARQL(db))
 			r.Post("/triples", handlers.Triples(db))
 			r.Post("/validate", handlers.Validate(db))
-
-			// FOXDEN metadata for this specific dataset
 			r.Get("/foxden", handlers.FoxdenDataset(foxdenCfg))
-
-			// Fetch from FOXDEN and store as RDF triples
 			r.Post("/foxden/ingest", handlers.FoxdenIngest(foxdenCfg))
 		})
 	})
@@ -61,7 +86,7 @@ func main() {
 	r.Get("/", handlers.Index())
 
 	port := getEnv("PORT", "8082")
-	log.Printf("data-service listening on :%s (foxden: %s)", port, getEnv("FOXDEN_URL", "http://localhost:8300"))
+	log.Printf("data-service listening on :%s (foxden: %s)", port, cfg.Foxden.MetadataURL)
 	log.Fatal(http.ListenAndServe(":"+port, r))
 }
 
