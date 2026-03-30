@@ -55,7 +55,10 @@ def bold(t):   return _c("1",  t)
 
 def _request(method: str, url: str, body: Any = None, timeout: int = 10) -> tuple[int, dict | list | str]:
     data = json.dumps(body).encode() if body is not None else None
-    auth = "Bearer: {}".format(os.environ.get("FOXDEN_TOKEN"))
+    token = os.environ.get("FOXDEN_TOKEN")
+    if not token:
+        raise ValueError("FOXDEN_TOKEN is not set or empty")
+    auth = f"Bearer {token}"
     headers = {"Content-Type": "application/json", "Accept": "application/json", "Authorization": auth}
     req = urllib.request.Request(url, data=data, headers=headers, method=method)
     try:
