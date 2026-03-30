@@ -11,6 +11,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"os"
 	"strings"
 	"time"
 )
@@ -145,21 +146,61 @@ func (c *Client) Search(req ServiceRequest) (*ServiceResponse, error) {
 	if err != nil {
 		return nil, fmt.Errorf("foxden: marshal request: %w", err)
 	}
-	resp, err := c.httpClient.Post(
+
+	r, err := http.NewRequest(
+		http.MethodPost,
 		c.baseURL+"/search",
-		"application/json",
 		bytes.NewReader(body),
 	)
+	if err != nil {
+		return nil, err
+	}
+
+	// TODO: I need to introduce configuration for FabricNode which will allow
+	// to setup auth client id and secret to obtain token from FOXDEN Authz service
+	// for that I'll need to write dedicated code to send request to FOXDEN Authz service
+	token := GetToken("FOXDEN_TOKEN")
+
+	// Add headers
+	r.Header.Set("Content-Type", "application/json")
+	r.Header.Set("Accept", "application/json")
+	r.Header.Set("Authorization", "Bearer "+token)
+
+	// Execute request
+	resp, err := c.httpClient.Do(r)
+	/*
+		resp, err := c.httpClient.Post(
+			c.baseURL+"/search",
+			"application/json",
+			bytes.NewReader(body),
+		)
+	*/
 	if err != nil {
 		return nil, fmt.Errorf("foxden: POST /search: %w", err)
 	}
 	defer resp.Body.Close()
 
-	var out ServiceResponse
-	if err := json.NewDecoder(resp.Body).Decode(&out); err != nil {
+	//var out ServiceResponse
+	var out []map[string]any
+	err = json.NewDecoder(resp.Body).Decode(&out)
+	if err != nil {
 		return nil, fmt.Errorf("foxden: decode response: %w", err)
 	}
-	return &out, nil
+	results := ServiceResults{
+		Records:  out,
+		NRecords: len(out),
+	}
+	status := "ok"
+	if !strings.Contains(strings.ToLower(resp.Status), "ok") {
+		status = resp.Status
+	}
+	sout := ServiceResponse{
+		HttpCode: resp.StatusCode,
+		Status:   status,
+		Error:    "",
+		Results:  results,
+	}
+	return &sout, nil
 }
 
 // QueryByBeamline returns all records for the given beamline name.
@@ -206,4 +247,30 @@ func (c *Client) QueryByBeamlineAndCycle(beamline, cycle string, limit int) (*Se
 			SortOrder: -1,
 		},
 	})
+}
+
+// GetToken returns a token from either an environment variable
+// or a file path (based on tokenSource value).
+func GetToken(tokenSource string) string {
+	if tokenSource == "" {
+		panic("tokenSource is empty")
+	}
+
+	// 1. Try environment variable
+	if val, ok := os.LookupEnv(tokenSource); ok && strings.TrimSpace(val) != "" {
+		return strings.TrimSpace(val)
+	}
+
+	// 2. Otherwise treat as file path
+	data, err := os.ReadFile(tokenSource)
+	if err != nil {
+		panic(fmt.Sprintf("failed to read token from env or file (%s): %v", tokenSource, err))
+	}
+
+	token := strings.TrimSpace(string(data))
+	if token == "" {
+		panic(fmt.Sprintf("token is empty in file: %s", tokenSource))
+	}
+
+	return token
 }
