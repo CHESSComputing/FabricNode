@@ -11,7 +11,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"os"
 	"strings"
 	"time"
 )
@@ -126,6 +125,7 @@ func (r Record) Schema() string {
 // Client is a typed HTTP client for FOXDEN metadata services.
 type Client struct {
 	baseURL    string
+	token      string // optional bearer token
 	httpClient *http.Client
 }
 
@@ -146,46 +146,26 @@ func (c *Client) Search(req ServiceRequest) (*ServiceResponse, error) {
 	if err != nil {
 		return nil, fmt.Errorf("foxden: marshal request: %w", err)
 	}
-
-	r, err := http.NewRequest(
-		http.MethodPost,
-		c.baseURL+"/search",
-		bytes.NewReader(body),
-	)
-	if err != nil {
-		return nil, err
+	httpReq, err2 := http.NewRequest("POST", c.baseURL+"/search", bytes.NewReader(body))
+	if err2 != nil {
+		return nil, fmt.Errorf("foxden: build request: %w", err2)
 	}
-
-	// TODO: I need to introduce configuration for FabricNode which will allow
-	// to setup auth client id and secret to obtain token from FOXDEN Authz service
-	// for that I'll need to write dedicated code to send request to FOXDEN Authz service
-	token := GetToken("FOXDEN_TOKEN")
-
-	// Add headers
-	r.Header.Set("Content-Type", "application/json")
-	r.Header.Set("Accept", "application/json")
-	r.Header.Set("Authorization", "Bearer "+token)
-
-	// Execute request
-	resp, err := c.httpClient.Do(r)
-	/*
-		resp, err := c.httpClient.Post(
-			c.baseURL+"/search",
-			"application/json",
-			bytes.NewReader(body),
-		)
-	*/
+	httpReq.Header.Set("Content-Type", "application/json")
+	if c.token != "" {
+		httpReq.Header.Set("Authorization", "Bearer "+c.token)
+	}
+	resp, err := c.httpClient.Do(httpReq)
 	if err != nil {
 		return nil, fmt.Errorf("foxden: POST /search: %w", err)
 	}
 	defer resp.Body.Close()
 
-	//var out ServiceResponse
+	//	var out ServiceResponse
 	var out []map[string]any
-	err = json.NewDecoder(resp.Body).Decode(&out)
-	if err != nil {
-		return nil, fmt.Errorf("foxden: decode response: %w", err)
-	}
+		if err := json.NewDecoder(resp.Body).Decode(&out); err != nil {
+			return nil, fmt.Errorf("foxden: decode response: %w", err)
+		}
+	//	return &out, nil
 	results := ServiceResults{
 		Records:  out,
 		NRecords: len(out),
@@ -249,28 +229,33 @@ func (c *Client) QueryByBeamlineAndCycle(beamline, cycle string, limit int) (*Se
 	})
 }
 
-// GetToken returns a token from either an environment variable
-// or a file path (based on tokenSource value).
-func GetToken(tokenSource string) string {
-	if tokenSource == "" {
-		panic("tokenSource is empty")
-	}
+// ──────────────────────────────────────────────────────────────────────────────
+// Config-aware constructor
+// ──────────────────────────────────────────────────────────────────────────────
 
-	// 1. Try environment variable
-	if val, ok := os.LookupEnv(tokenSource); ok && strings.TrimSpace(val) != "" {
-		return strings.TrimSpace(val)
-	}
+// NewClientFromConfig creates a Client from a FoxdenConfig section.
+// It honours the Token and Timeout fields.
+func NewClientFromConfig(cfg interface {
+	GetMetadataURL() string
+	GetToken() string
+	GetTimeout() int
+}) *Client {
+	// cfg is the fabricconfig.FoxdenConfig; we accept an interface to avoid
+	// importing fabricconfig here (prevents import cycles).
+	// Use the concrete helper below when calling from main.go.
+	return NewClient(cfg.GetMetadataURL())
+}
 
-	// 2. Otherwise treat as file path
-	data, err := os.ReadFile(tokenSource)
-	if err != nil {
-		panic(fmt.Sprintf("failed to read token from env or file (%s): %v", tokenSource, err))
+// NewClientWithToken creates a Client with a bearer token for authenticated
+// FOXDEN instances.  The token is sent as "Authorization: Bearer <token>".
+func NewClientWithToken(baseURL, token string, timeoutSeconds int) *Client {
+	t := time.Duration(timeoutSeconds) * time.Second
+	if t <= 0 {
+		t = 10 * time.Second
 	}
-
-	token := strings.TrimSpace(string(data))
-	if token == "" {
-		panic(fmt.Sprintf("token is empty in file: %s", tokenSource))
+	return &Client{
+		baseURL:    baseURL,
+		token:      token,
+		httpClient: &http.Client{Timeout: t},
 	}
-
-	return token
 }
