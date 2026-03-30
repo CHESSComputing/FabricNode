@@ -132,6 +132,25 @@ docker/ps: ## Show Docker container status
 demo: ## Run the end-to-end curl demo (services must be running)
 	@bash scripts/demo.sh
 
+# Usage: make probe KEY=btr VALUE=test-123-a
+#        make probe KEY=cycle VALUE=2026-1
+#        make probe KEY=beamline VALUE=3a
+#        make probe KEY=sample_name VALUE=silicon-std  VERBOSE=1
+#        make probe KEY=btr VALUE=test-123-a DRY_RUN=1
+.PHONY: probe
+probe: ## Trace FOXDEN→data-service→SPARQL data flow  (KEY=<field> VALUE=<val>)
+	@test -n "$(KEY)"   || (echo "Usage: make probe KEY=<field> VALUE=<val>"; exit 1)
+	@test -n "$(VALUE)" || (echo "Usage: make probe KEY=<field> VALUE=<val>"; exit 1)
+	@python scripts/probe.py \
+		--key   "$(KEY)"   \
+		--value "$(VALUE)" \
+		$(if $(FOXDEN),  --foxden  "$(FOXDEN)")  \
+		$(if $(DATA),    --data    "$(DATA)")    \
+		$(if $(CATALOG), --catalog "$(CATALOG)") \
+		$(if $(LIMIT),   --limit   "$(LIMIT)")   \
+		$(if $(DRY_RUN), --dry-run)              \
+		$(if $(VERBOSE), --verbose)
+
 .PHONY: health
 health: ## HTTP health check for all services (alias for status)
 	@$(MANAGE) status
