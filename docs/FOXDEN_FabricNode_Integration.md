@@ -1,7 +1,7 @@
 # FOXDEN and FabricNode Integration
 
 **CHESS — Cornell High Energy Synchrotron Source**
-**Document version:** 1.0 · 2026
+**Document version:** 20260331
 
 ---
 
@@ -87,7 +87,7 @@ FOXDEN is a document-oriented metadata store built by and for the CHESS user com
 | `technique` | `["high_energy_diffraction_microscopy_near_field", "tomography"]` |
 | `detectors` | `["dual_dexelas", "retiga"]` |
 | `beam_energy` | `41.991` |
-| `did` | `"/beamline=3a/btr=test-123-a/cycle=2026-1/sample_name=PAT-7271..."` |
+| `did` | `"/beamline=3a/btr=test-123-a/cycle=2026-1/sample_name=PAT-7271"` |
 
 FOXDEN is excellent at answering:
 - "Give me everything about experiment `test-123-a`."
@@ -205,7 +205,7 @@ The canonical form is always lower-case. The `beamline=` segment in a dataset DI
 A **Dataset DID** (Dataset Identifier) is a slash-separated `key=value` path that uniquely identifies a dataset within a beamline. The first segment is always `beamline=<id>`.
 
 ```
-/beamline=3a/btr=test-123-a/cycle=2026-1/sample_name=PAT-7271DD79-9845-48A4-A813-9FDA3F10A4B2
+/beamline=3a/btr=test-123-a/cycle=2026-1/sample_name=PAT-7271
 ```
 
 Conventional segment order:
@@ -215,7 +215,7 @@ Conventional segment order:
 | 1 | `beamline` | `3a` |
 | 2 | `btr` | `test-123-a` |
 | 3 | `cycle` | `2026-1` |
-| 4 | `sample_name` | `PAT-7271...` |
+| 4 | `sample_name` | `PAT-7271` |
 | 5+ | additional keys | experiment-specific |
 
 When used as a URL path parameter, the DID must be **URL-encoded** because it contains `/` and `=` characters:
