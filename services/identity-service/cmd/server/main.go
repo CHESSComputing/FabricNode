@@ -98,6 +98,10 @@ func main() {
 	r.Get("/.well-known/did.json",     handlers.DIDDocument(state))
 	r.Get("/credentials/conformance",  handlers.ConformanceVC(state))
 	r.Post("/credentials/verify",      handlers.VerifyVC(state))
+
+	// Dataset publication credentials (called by FOXDEN DOI service)
+	r.Post("/credentials/dataset",        handlers.IssueDatasetCredential(state))
+	r.Post("/credentials/dataset/verify", handlers.VerifyDatasetCredential(state))
 	r.Get("/did/{did}",                handlers.DIDResolve(state))
 	r.Get("/keys/node-key-1",          handlers.PublicKey(state))
 	r.Get("/health",                   handlers.Health(state))
