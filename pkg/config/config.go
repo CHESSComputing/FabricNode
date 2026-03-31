@@ -140,6 +140,12 @@ type FoxdenConfig struct {
 	// DOIURL is the base URL of the FOXDEN DOI/publication service.
 	DOIURL string `yaml:"doi_url" json:"doi_url"`
 
+	// AuthzURL is FOXDEN authentication/authrization service
+	AuthzURL     string `yaml:"authz_url" json:"authz_url"`
+	ClientID     string `yaml:"authz_client_id" json:"authz_client_id"`
+	ClientSecret string `yaml:"authz_client_secret" json:"authz_client_secret"`
+	TokenScope   string `yaml:"token_scope" json:"token_scope"`
+
 	// Token is the bearer token sent in the Authorization header.
 	// Leave empty if the FOXDEN instance does not require authentication.
 	// In production, inject this via the FOXDEN_TOKEN environment variable
@@ -246,7 +252,7 @@ func defaults() *Config {
 		Catalog: CatalogConfig{
 			Port: 8081,
 			Beamlines: []BeamlineConfig{
-				{ID: "id1",  Label: "Beamline ID1 — X-ray Diffraction",      Type: "x-ray-diffraction",       Location: "CHESS Wilson Laboratory"},
+				{ID: "id1", Label: "Beamline ID1 — X-ray Diffraction", Type: "x-ray-diffraction", Location: "CHESS Wilson Laboratory"},
 				{ID: "id3a", Label: "Beamline ID3A — Protein Crystallography", Type: "protein-crystallography"},
 				{ID: "fast", Label: "Beamline FAST — Time-Resolved Scattering", Type: "time-resolved-scattering"},
 			},
