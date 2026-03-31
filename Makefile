@@ -151,6 +151,25 @@ probe: ## Trace FOXDEN→data-service→SPARQL data flow  (KEY=<field> VALUE=<va
 		$(if $(DRY_RUN), --dry-run)              \
 		$(if $(VERBOSE), --verbose)
 
+# Usage: make probe-doi DID="/beamline=3a/btr=test-123-a/cycle=2026-1/sample_name=PAT-7271" \
+#                       DOI="10.5281/zenodo.123456" \
+#                       DOI_URL="https://doi.org/10.5281/zenodo.123456"
+#        make probe-doi DID="..." DOI="..." DOI_URL="..." INGEST=1 VERBOSE=1
+.PHONY: probe-doi
+probe-doi: ## Trace FOXDEN DOI→identity-service credential flow  (DID= DOI= DOI_URL=)
+	@test -n "$(DID)"     || (echo "Usage: make probe-doi DID=<did> DOI=<doi> DOI_URL=<url>"; exit 1)
+	@test -n "$(DOI)"     || (echo "Usage: make probe-doi DID=<did> DOI=<doi> DOI_URL=<url>"; exit 1)
+	@test -n "$(DOI_URL)" || (echo "Usage: make probe-doi DID=<did> DOI=<doi> DOI_URL=<url>"; exit 1)
+	@python scripts/probe_doi.py \
+		--did     "$(DID)"     \
+		--doi     "$(DOI)"     \
+		--doi-url "$(DOI_URL)" \
+		$(if $(IDENTITY), --identity "$(IDENTITY)") \
+		$(if $(DATA),     --data     "$(DATA)")     \
+		$(if $(FOXDEN),   --foxden   "$(FOXDEN)")   \
+		$(if $(INGEST),   --ingest)                 \
+		$(if $(VERBOSE),  --verbose)
+
 .PHONY: health
 health: ## HTTP health check for all services (alias for status)
 	@$(MANAGE) status
