@@ -4,7 +4,6 @@ import (
 	"log"
 	"net/http"
 	"os"
-	"strings"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
@@ -15,28 +14,6 @@ import (
 	"github.com/CHESSComputing/FabricNode/services/data-service/internal/store"
 )
 
-// GetToken returns a token from either an environment variable
-// or a file path (based on tokenSource value).
-func GetToken(tokenSource string) string {
-	if tokenSource == "" {
-		panic("tokenSource is empty")
-	}
-
-	// 1. Try environment variable
-	if val, ok := os.LookupEnv(tokenSource); ok && strings.TrimSpace(val) != "" {
-		return strings.TrimSpace(val)
-	}
-
-	// 2. Otherwise treat as file path
-	data, err := os.ReadFile(tokenSource)
-	if err == nil {
-		token := strings.TrimSpace(string(data))
-		return token
-	}
-
-	return tokenSource
-}
-
 func main() {
 	// ── Load configuration ───────────────────────────────────────────────────
 	cfg, err := fabricconfig.Load(getEnv("FABRIC_CONFIG", ""))
@@ -46,10 +23,23 @@ func main() {
 
 	db := store.New()
 
+	token := GetTokenFromFoxden(
+		cfg.Foxden.AuthzURL,
+		cfg.Foxden.ClientID,
+		cfg.Foxden.ClientSecret,
+		cfg.Foxden.TokenScope,
+	)
+	if token == "" {
+		// fallback mechanism to get token from env or file
+		token = GetToken(cfg.Foxden.Token)
+	}
+	if token == "" {
+		panic("unable to get FOXDEN token")
+	}
 	foxdenCfg := handlers.FoxdenConfig{
 		Client: foxden.NewClientWithToken(
 			cfg.Foxden.MetadataURL,
-			GetToken(cfg.Foxden.Token),
+			token,
 			cfg.Foxden.Timeout,
 		),
 		Store: db,
