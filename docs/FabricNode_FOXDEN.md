@@ -18,6 +18,43 @@ The `POST /beamlines/{beamline}/datasets/{did}/foxden/ingest` endpoint is the de
 
 ---
 
+### FOXDEN DOI integration with FabricNode
+
+FOXDEN's DOI service mints a DOI for a dataset (via DataCite or similar). For that DOI to be trustworthy in a federated context, the FabricNode needs to issue a signed Verifiable Credential attesting: "this dataset DID, at this graph IRI, was published under this DOI, at this point in time, by this node." FOXDEN calls the identity-service to get that credential. External parties can then verify the credential against the node's public DID document without trusting any central authority.The flow is: FOXDEN DOI service → POST /credentials/dataset → identity-service issues a DatasetPublicationCredential → returns signed VC → FOXDEN stores it alongside the DOI record.
+
+
+### real world scenario
+When FOXDEN's DOI service mints a DOI for a dataset it makes one HTTP call to the FabricNode:
+
+```
+POST http://localhost:8083/credentials/dataset
+{
+  "did":     "/beamline=3a/btr=test-123-a/cycle=2026-1/sample_name=PAT-7271",
+  "doi":     "10.5281/zenodo.123456",
+  "doi_url": "https://doi.org/10.5281/zenodo.123456"
+}
+```
+
+
+The identity-service returns a signed DatasetPublicationCredential — a W3C Verifiable Credential that binds the dataset DID, the named-graph IRI, the DOI, and the SPARQL endpoint together under the node's Ed25519 signature. FOXDEN stores this alongside its DOI record. External parties can verify it by fetching the node's DID document and checking the signature — no central authority needed.
+
+---
+
+### Examples of integration tests
+
+```
+# FOXDEN + FabricNode ingestion test
+make probe KEY=btr VALUE=test-123-a VERBOSE=1
+
+# FOXDEN + FabricNode DOI integration test
+# first set already existing did from FOXDEN
+did=...
+make probe-doi DID=$did DOI="10.5281/zenodo.123456" DOI_URL="https://doi.org/10.5281/zenodo.123456" INGEST=1 VERBOSE=1
+```
+
+
+---
+
 **What is RDF and why convert FOXDEN records to triples?**
 
 RDF stands for Resource Description Framework. Its core idea is that every fact is expressed as a three-part statement:
