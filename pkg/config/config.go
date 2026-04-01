@@ -166,7 +166,7 @@ type FoxdenConfig struct {
 func Load(path string) (*Config, error) {
 	resolved, err := resolvePath(path)
 	if err != nil {
-		return nil, err
+		return defaults(), err
 	}
 
 	data, err := os.ReadFile(resolved)
@@ -187,16 +187,6 @@ func Load(path string) (*Config, error) {
 
 	cfg.ApplyEnv()
 	return cfg, nil
-}
-
-// MustLoad calls Load and panics on error. Useful in main() where a missing
-// config is unrecoverable.
-func MustLoad(path string) *Config {
-	cfg, err := Load(path)
-	if err != nil {
-		panic("config: " + err.Error())
-	}
-	return cfg
 }
 
 // ApplyEnv overrides config values with environment variables.
@@ -269,6 +259,10 @@ func defaults() *Config {
 		},
 		Foxden: FoxdenConfig{
 			MetadataURL: "http://localhost:8300",
+			ProvenanceURL: "http://localhost:8310",
+			DOIURL: "http://localhost:8377",
+			AuthzURL: "http://localhost:8380",
+			TokenScope: "read+write",
 			Timeout:     10,
 		},
 	}
