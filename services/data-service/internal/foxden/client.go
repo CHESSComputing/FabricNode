@@ -162,16 +162,16 @@ func (c *Client) Search(req ServiceRequest) (*ServiceResponse, error) {
 
 	//	var out ServiceResponse
 	var out []map[string]any
-		if err := json.NewDecoder(resp.Body).Decode(&out); err != nil {
-			return nil, fmt.Errorf("foxden: decode response: %w", err)
-		}
+	if err := json.NewDecoder(resp.Body).Decode(&out); err != nil {
+		return nil, fmt.Errorf("foxden: decode response: %w", err)
+	}
 	//	return &out, nil
 	results := ServiceResults{
 		Records:  out,
 		NRecords: len(out),
 	}
 	status := "ok"
-	if !strings.Contains(strings.ToLower(resp.Status), "ok") {
+	if resp.StatusCode != 200 {
 		status = resp.Status
 	}
 	sout := ServiceResponse{
