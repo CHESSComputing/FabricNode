@@ -15,10 +15,11 @@ import (
 )
 
 func main() {
-	// ── Load configuration ───────────────────────────────────────────────────
-	// Searches for fabric.yaml in standard locations; falls back to safe
-	// defaults if no file is found. FABRIC_CONFIG env var overrides the path.
-	nodeCfg, beamlines := loadConfig()
+	nodeCfg, err := fabricconfig.Load(server.GetEnv("FABRIC_CONFIG", ""))
+	if err != nil {
+		log.Printf("catalog-service: config warning: %v — using defaults", err)
+	}
+	beamlines := nodeCfg.Catalog.Beamlines
 
 	cfg := void.NodeConfig{
 		BaseURL:        nodeCfg.Node.BaseURL,
@@ -58,31 +59,3 @@ func main() {
 		port, cfg.NodeID, cfg.BaseURL, len(beamlines))
 	log.Fatal(http.ListenAndServe(":"+port, r))
 }
-
-// loadConfig loads the node configuration and extracts the parts used by
-// this service. Logs a warning (not a fatal) if no config file is found —
-// the built-in defaults are sufficient for local development.
-func loadConfig() (*fabricconfig.Config, []fabricconfig.BeamlineConfig) {
-	cfg, err := fabricconfig.Load(server.GetEnv("FABRIC_CONFIG", ""))
-	if err != nil {
-		log.Printf("catalog-service: config warning: %v — using defaults", err)
-		cfg, _ = fabricconfig.Load("") // re-call to get defaults (Load never returns nil)
-		// If even that errors (shouldn't), fall back manually.
-		if cfg == nil {
-			return &fabricconfig.Config{
-				Node: fabricconfig.NodeConfig{
-					ID:      server.GetEnv("NODE_ID", "chess-node"),
-					Name:    server.GetEnv("NODE_NAME", "CHESS Federated Knowledge Fabric Node"),
-					BaseURL: server.GetEnv("NODE_BASE_URL", "http://localhost:8081"),
-				},
-			}, nil
-		}
-	}
-	// Honour legacy env vars that may have been set without a config file.
-	if v := server.GetEnv("NODE_BASE_URL", ""); v != "" {
-		cfg.Node.BaseURL = v
-	}
-	return cfg, cfg.Catalog.Beamlines
-}
-
-
