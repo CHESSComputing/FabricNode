@@ -124,3 +124,39 @@ FabricNode/
         ├── internal/
         │   └── store/           ← notification inbox store
 ```
+
+### Local development
+
+To work locally ensure that you have `go.work`
+
+```bash
+# if go.work file does not exist do the following
+go work init ./pkg/... ./services/...
+go work sync
+make build
+```
+
+Here is an example of `go.work` file
+
+
+```
+go 1.26.1
+
+use (
+	./pkg/config
+	./pkg/model
+	./pkg/server
+    ./services/catalog-service
+    ./services/data-service
+    ./services/identity-service
+    ./services/notification-service
+)
+```
+
+Ensure CI works without it
+
+Test:
+
+```bash
+GOWORK=off make build
+```
