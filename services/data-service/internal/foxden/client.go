@@ -233,19 +233,6 @@ func (c *Client) QueryByBeamlineAndCycle(beamline, cycle string, limit int) (*Se
 // Config-aware constructor
 // ──────────────────────────────────────────────────────────────────────────────
 
-// NewClientFromConfig creates a Client from a FoxdenConfig section.
-// It honours the Token and Timeout fields.
-func NewClientFromConfig(cfg interface {
-	GetMetadataURL() string
-	GetToken() string
-	GetTimeout() int
-}) *Client {
-	// cfg is the fabricconfig.FoxdenConfig; we accept an interface to avoid
-	// importing fabricconfig here (prevents import cycles).
-	// Use the concrete helper below when calling from main.go.
-	return NewClient(cfg.GetMetadataURL())
-}
-
 // NewClientWithToken creates a Client with a bearer token for authenticated
 // FOXDEN instances.  The token is sent as "Authorization: Bearer <token>".
 func NewClientWithToken(baseURL, token string, timeoutSeconds int) *Client {
