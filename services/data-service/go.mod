@@ -14,5 +14,3 @@ require (
 	github.com/CHESSComputing/FabricNode v0.0.0-20260330184757-be305e315636
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
-
-replace github.com/CHESSComputing/FabricNode/pkg/config => ../../pkg/config
