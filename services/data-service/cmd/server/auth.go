@@ -17,7 +17,7 @@ type Token struct {
 	Expires     int64  `json:"expires_in"`
 }
 
-// GetToken returns a token from FOXDEN
+// GetTokenFromFoxden returns a token from FOXDEN
 func GetTokenFromFoxden(furl, cid, secret, scope string) string {
 	rurl := fmt.Sprintf(
 		"%s/oauth/token?client_id=%s&response&client_secret=%s&grant_type=client_credentials&scope=%s", furl, cid, secret, scope)
@@ -40,10 +40,6 @@ func GetTokenFromFoxden(furl, cid, secret, scope string) string {
 // GetToken returns a token from either an environment variable
 // or a file path (based on tokenSource value).
 func GetToken(tokenSource string) string {
-	if tokenSource == "" {
-		panic("tokenSource is empty")
-	}
-
 	// 1. Try environment variable
 	if val, ok := os.LookupEnv(tokenSource); ok && strings.TrimSpace(val) != "" {
 		return strings.TrimSpace(val)
