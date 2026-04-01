@@ -1,8 +1,8 @@
 // Package model defines the canonical domain types shared across all
 // FabricNode services.
 //
-// Beamline names follow CHESS convention: letters and digits only,
-// e.g. "id1", "id3a", "fast", "qm2".
+// Beamline names follow CHESS convention: letters and digits only in any order
+// e.g. "id1", "id3a", "fast", "qm2", "3a", etc.
 //
 // Dataset identifiers (DIDs) are slash-separated key=value paths:
 //
