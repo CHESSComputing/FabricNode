@@ -1,14 +1,15 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"net/http"
-	"os"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 
 	fabricconfig "github.com/CHESSComputing/FabricNode/pkg/config"
+	"github.com/CHESSComputing/FabricNode/pkg/server"
 	"github.com/CHESSComputing/FabricNode/services/data-service/internal/foxden"
 	"github.com/CHESSComputing/FabricNode/services/data-service/internal/handlers"
 	"github.com/CHESSComputing/FabricNode/services/data-service/internal/store"
@@ -16,7 +17,7 @@ import (
 
 func main() {
 	// ── Load configuration ───────────────────────────────────────────────────
-	cfg, err := fabricconfig.Load(getEnv("FABRIC_CONFIG", ""))
+	cfg, err := fabricconfig.Load(server.GetEnv("FABRIC_CONFIG", ""))
 	if err != nil {
 		log.Printf("data-service: config warning: %v — using defaults", err)
 	}
@@ -49,7 +50,7 @@ func main() {
 	r.Use(middleware.Logger)
 	r.Use(middleware.Recoverer)
 	r.Use(middleware.RequestID)
-	r.Use(cors)
+	r.Use(server.ReadWriteCORS())
 
 	// ── Global SPARQL + graphs ────────────────────────────────────────────────
 	r.Get("/sparql", handlers.SPARQL(db))
@@ -75,27 +76,9 @@ func main() {
 	r.Get("/health", handlers.Health(db))
 	r.Get("/", handlers.Index())
 
-	port := getEnv("PORT", "8082")
+	port := server.GetEnv("PORT", fmt.Sprintf("%d", cfg.DataService.Port))
 	log.Printf("data-service listening on :%s (foxden: %s)", port, cfg.Foxden.MetadataURL)
 	log.Fatal(http.ListenAndServe(":"+port, r))
 }
 
-func cors(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Access-Control-Allow-Origin", "*")
-		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
-		w.Header().Set("Access-Control-Allow-Headers", "Accept, Content-Type")
-		if r.Method == http.MethodOptions {
-			w.WriteHeader(http.StatusNoContent)
-			return
-		}
-		next.ServeHTTP(w, r)
-	})
-}
 
-func getEnv(key, fallback string) string {
-	if v := os.Getenv(key); v != "" {
-		return v
-	}
-	return fallback
-}

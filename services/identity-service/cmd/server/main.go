@@ -4,23 +4,32 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"os"
 	"time"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/google/uuid"
 
+	fabricconfig "github.com/CHESSComputing/FabricNode/pkg/config"
+	"github.com/CHESSComputing/FabricNode/pkg/server"
 	"github.com/CHESSComputing/FabricNode/services/identity-service/internal/did"
 	"github.com/CHESSComputing/FabricNode/services/identity-service/internal/handlers"
 	"github.com/CHESSComputing/FabricNode/services/identity-service/internal/vc"
 )
 
 func main() {
-	baseURL    := getEnv("NODE_BASE_URL", "http://localhost:8083")
-	nodeID     := getEnv("NODE_ID", "chess-node")
-	nodeName   := getEnv("NODE_NAME", "CHESS Federated Knowledge Fabric Node")
-	catalogURL := getEnv("CATALOG_URL", "http://localhost:8081")
+	// ── Load configuration ───────────────────────────────────────────────────
+	cfg, err := fabricconfig.Load(server.GetEnv("FABRIC_CONFIG", ""))
+	if err != nil {
+		log.Printf("identity-service: config warning: %v — using defaults", err)
+	}
+
+	baseURL    := server.GetEnv("NODE_BASE_URL", fmt.Sprintf("http://localhost:%d", cfg.Identity.Port))
+	nodeID     := cfg.Node.ID
+	nodeName   := cfg.Node.Name
+	catalogURL := server.GetEnv("CATALOG_URL", "http://localhost:8081")
+	dataURL    := server.GetEnv("DATA_URL", "http://localhost:8082")
+	notifyURL  := server.GetEnv("NOTIFICATION_URL", fmt.Sprintf("http://localhost:%d", cfg.Notification.Port))
 
 	// ── Generate key pair at startup ─────────────────────────────────────────
 	kp, err := did.NewKeyPair()
@@ -33,7 +42,7 @@ func main() {
 		{
 			ID:              fmt.Sprintf("did:web:%s#sparql", nodeID),
 			Type:            "SPARQLEndpoint",
-			ServiceEndpoint: getEnv("DATA_URL", "http://localhost:8082") + "/sparql",
+			ServiceEndpoint: dataURL + "/sparql",
 		},
 		{
 			ID:              fmt.Sprintf("did:web:%s#void", nodeID),
@@ -48,7 +57,7 @@ func main() {
 		{
 			ID:              fmt.Sprintf("did:web:%s#ldnInbox", nodeID),
 			Type:            "LDNInbox",
-			ServiceEndpoint: getEnv("NOTIFICATION_URL", "http://localhost:8084") + "/inbox",
+			ServiceEndpoint: notifyURL + "/inbox",
 		},
 	}
 	didDoc := did.New(baseURL, nodeID, kp, services)
@@ -93,39 +102,19 @@ func main() {
 	r.Use(middleware.Logger)
 	r.Use(middleware.Recoverer)
 	r.Use(middleware.RequestID)
-	r.Use(cors)
+	r.Use(server.ReadWriteCORS())
 
-	r.Get("/.well-known/did.json",     handlers.DIDDocument(state))
-	r.Get("/credentials/conformance",  handlers.ConformanceVC(state))
-	r.Post("/credentials/verify",      handlers.VerifyVC(state))
-
-	// Dataset publication credentials (called by FOXDEN DOI service)
+	r.Get("/.well-known/did.json",       handlers.DIDDocument(state))
+	r.Get("/credentials/conformance",     handlers.ConformanceVC(state))
+	r.Post("/credentials/verify",         handlers.VerifyVC(state))
 	r.Post("/credentials/dataset",        handlers.IssueDatasetCredential(state))
 	r.Post("/credentials/dataset/verify", handlers.VerifyDatasetCredential(state))
-	r.Get("/did/{did}",                handlers.DIDResolve(state))
-	r.Get("/keys/node-key-1",          handlers.PublicKey(state))
-	r.Get("/health",                   handlers.Health(state))
-	r.Get("/",                         handlers.Index(state))
+	r.Get("/did/{did}",                   handlers.DIDResolve(state))
+	r.Get("/keys/node-key-1",             handlers.PublicKey(state))
+	r.Get("/health",                      handlers.Health(state))
+	r.Get("/",                            handlers.Index(state))
 
-	port := getEnv("PORT", "8083")
+	port := server.GetEnv("PORT", fmt.Sprintf("%d", cfg.Identity.Port))
 	log.Printf("identity-service listening on :%s (DID: %s)", port, didDoc.ID)
 	log.Fatal(http.ListenAndServe(":"+port, r))
-}
-
-func cors(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Access-Control-Allow-Origin", "*")
-		if r.Method == http.MethodOptions {
-			w.WriteHeader(http.StatusNoContent)
-			return
-		}
-		next.ServeHTTP(w, r)
-	})
-}
-
-func getEnv(key, fallback string) string {
-	if v := os.Getenv(key); v != "" {
-		return v
-	}
-	return fallback
 }

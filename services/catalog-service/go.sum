@@ -1,5 +1,7 @@
 github.com/CHESSComputing/FabricNode v0.0.0-20260330184757-be305e315636 h1:hlqLVj38vYH29e0y7CG+OFj0GvXCWjQAYlZixWkmQ5Y=
 github.com/CHESSComputing/FabricNode v0.0.0-20260330184757-be305e315636/go.mod h1:fh1HQDI/LWHWhBb7HDRU/pb2gZzpYfIbIhyK0JefL28=
+github.com/CHESSComputing/FabricNode/pkg/server v0.0.0-20260401173051-e8aa9145f69b h1:OmvytluL1bSawIpSmIJO4Zgd2BECtt36TTNt+NxB9x8=
+github.com/CHESSComputing/FabricNode/pkg/server v0.0.0-20260401173051-e8aa9145f69b/go.mod h1:5TsQtaSLkCf/U/g1Bj5DfQpHGmeyXzTvlSfZyPr3Ixw=
 github.com/go-chi/chi/v5 v5.1.0 h1:acVI1TYaD+hhedDJ3r54HyA6sExp3HfXq7QWEEY/xMw=
 github.com/go-chi/chi/v5 v5.1.0/go.mod h1:DslCQbL2OYiznFReuXYUmQ2hGd1aDpCnlMNITLSKoi8=
 gopkg.in/check.v1 v0.0.0-20161208181325-20d25e280405 h1:yhCVgyC4o1eVCa2tZl7eS0r+SDo693bJlVdllGtEeKM=

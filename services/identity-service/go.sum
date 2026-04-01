@@ -1,4 +1,11 @@
+github.com/CHESSComputing/FabricNode/pkg/config v0.0.0-20260401173051-e8aa9145f69b h1:ifMPdD6l+96rJIAoQFG5Bq4Ubj+G7PFIHSlJ8VQBtm8=
+github.com/CHESSComputing/FabricNode/pkg/config v0.0.0-20260401173051-e8aa9145f69b/go.mod h1:+kko+wOAnINtspNKV+oPwrMmW2NDkTUU8H2njP7rpR0=
+github.com/CHESSComputing/FabricNode/pkg/server v0.0.0-20260401173051-e8aa9145f69b h1:OmvytluL1bSawIpSmIJO4Zgd2BECtt36TTNt+NxB9x8=
+github.com/CHESSComputing/FabricNode/pkg/server v0.0.0-20260401173051-e8aa9145f69b/go.mod h1:5TsQtaSLkCf/U/g1Bj5DfQpHGmeyXzTvlSfZyPr3Ixw=
 github.com/go-chi/chi/v5 v5.2.5 h1:Eg4myHZBjyvJmAFjFvWgrqDTXFyOzjj7YIm3L3mu6Ug=
 github.com/go-chi/chi/v5 v5.2.5/go.mod h1:X7Gx4mteadT3eDOMTsXzmI4/rwUpOwBHLpAfupzFJP0=
 github.com/google/uuid v1.6.0 h1:NIvaJDMOsjHA8n1jAhLSgzrAzy1Hgr+hNrb57e+94F0=
 github.com/google/uuid v1.6.0/go.mod h1:TIyPZe4MgqvfeYDBFedMoGGpEw/LqOeaOT+nhxU+yHo=
+gopkg.in/check.v1 v0.0.0-20161208181325-20d25e280405/go.mod h1:Co6ibVJAznAaIkqp8huTwlJQCZ016jof/cbN4VW5Yz0=
+gopkg.in/yaml.v3 v3.0.1 h1:fxVm/GzAzEWqLHuvctI91KS9hhNmmWOoWu0XTYJS7CA=
+gopkg.in/yaml.v3 v3.0.1/go.mod h1:K4uyk7z7BCEPqu6E+C64Yfv1cQ7kz7rIZviUmN+EgEM=
