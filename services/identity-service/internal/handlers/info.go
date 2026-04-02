@@ -18,7 +18,7 @@ func Health(s *NodeState) http.HandlerFunc {
 // GET /
 func Index(s *NodeState) http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
-		writeJSON(w, http.StatusOK, map[string]interface{}{
+		writeJSON(w, http.StatusOK, map[string]any{
 			"service": "identity-service",
 			"did":     s.DIDDoc.ID,
 			"endpoints": map[string]string{

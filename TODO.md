@@ -1,12 +1,6 @@
-1. generalize graph db store to interface with common APIs such that I can have
-   different implementations: in-memory and oxigraph graph stores; adjust
-   configuration to choose either one; provide implementation for oxigraph
-   store
-
 2. notification-service store uses store.Inbox but config.go declares
    *store.Inbox — the type name in handlers/config.go is *store.Inbox but the
-   actual store file may export Store not Inbox (worth verifying after the
-   renaming history of this project).
+   actual store file may export Store not Inbox
 
 3. void.NodeConfig is a second config struct that duplicates
    fabricconfig.NodeConfig — catalog-service carries both. void.NodeConfig has

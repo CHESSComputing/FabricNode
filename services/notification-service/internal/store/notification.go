@@ -26,9 +26,9 @@ type Notification struct {
 	ReceivedAt  time.Time              `json:"receivedAt"`
 	Actor       string                 `json:"actor,omitempty"`
 	Type        []string               `json:"type"`
-	Object      map[string]interface{} `json:"object,omitempty"`
+	Object      map[string]any `json:"object,omitempty"`
 	Target      string                 `json:"target,omitempty"`
-	RawBody     map[string]interface{} `json:"rawBody"`
+	RawBody     map[string]any `json:"rawBody"`
 	Acknowledged bool                  `json:"acknowledged"`
 }
 
@@ -42,7 +42,7 @@ type Inbox struct {
 func New() *Inbox { return &Inbox{} }
 
 // Add stores a notification and returns it with an assigned ID.
-func (i *Inbox) Add(raw map[string]interface{}) *Notification {
+func (i *Inbox) Add(raw map[string]any) *Notification {
 	n := &Notification{
 		ID:         "urn:uuid:" + uuid.NewString(),
 		ReceivedAt: time.Now().UTC(),
@@ -53,7 +53,7 @@ func (i *Inbox) Add(raw map[string]interface{}) *Notification {
 		switch t := v.(type) {
 		case string:
 			n.Type = []string{t}
-		case []interface{}:
+		case []any:
 			for _, s := range t {
 				if str, ok := s.(string); ok {
 					n.Type = append(n.Type, str)
@@ -72,7 +72,7 @@ func (i *Inbox) Add(raw map[string]interface{}) *Notification {
 		}
 	}
 	if v, ok := raw["object"]; ok {
-		if m, ok := v.(map[string]interface{}); ok {
+		if m, ok := v.(map[string]any); ok {
 			n.Object = m
 		}
 	}

@@ -147,13 +147,13 @@ func VerifyDatasetCredential(s *NodeState) http.HandlerFunc {
 			return
 		}
 		if err := vc.VerifyDatasetCredential(&cred, s.KeyPair.PublicKey); err != nil {
-			writeJSON(w, http.StatusOK, map[string]interface{}{
+			writeJSON(w, http.StatusOK, map[string]any{
 				"verified": false,
 				"error":    err.Error(),
 			})
 			return
 		}
-		writeJSON(w, http.StatusOK, map[string]interface{}{
+		writeJSON(w, http.StatusOK, map[string]any{
 			"verified":    true,
 			"issuer":      cred.Issuer,
 			"did":         cred.Subject.ID,

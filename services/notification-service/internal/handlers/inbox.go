@@ -17,7 +17,7 @@ func InboxList(cfg *Config) http.HandlerFunc {
 		notifications := cfg.Inbox.List(typeFilter)
 		w.Header().Set("Content-Type", "application/ld+json")
 		w.Header().Set("Link", `<http://www.w3.org/ns/ldp#BasicContainer>; rel="type"`)
-		json.NewEncoder(w).Encode(map[string]interface{}{
+		json.NewEncoder(w).Encode(map[string]any{
 			"@context":     "https://www.w3.org/ns/activitystreams",
 			"@type":        "OrderedCollection",
 			"totalItems":   len(notifications),
@@ -41,7 +41,7 @@ func InboxReceive(cfg *Config) http.HandlerFunc {
 			http.Error(w, "failed to read body", http.StatusBadRequest)
 			return
 		}
-		var raw map[string]interface{}
+		var raw map[string]any
 		if err := json.Unmarshal(body, &raw); err != nil {
 			http.Error(w, "invalid JSON body", http.StatusBadRequest)
 			return

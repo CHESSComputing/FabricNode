@@ -101,6 +101,19 @@ type DataServiceConfig struct {
 
 	// SPARQLResultLimit caps the number of triples returned by any SPARQL query.
 	SPARQLResultLimit int `yaml:"sparql_result_limit" json:"sparql_result_limit"`
+
+	// StoreType selects the graph database back-end.
+	// Valid values: "memory" (default), "oxigraph".
+	StoreType string `yaml:"store_type" json:"store_type"`
+
+	// OxigraphURL is the base URL of the Oxigraph HTTP server,
+	// e.g. "http://localhost:7878".
+	// Required when StoreType is "oxigraph"; ignored otherwise.
+	OxigraphURL string `yaml:"oxigraph_url" json:"oxigraph_url"`
+
+	// OxigraphTimeout is the HTTP client timeout in seconds for Oxigraph
+	// requests (default: 30).
+	OxigraphTimeout int `yaml:"oxigraph_timeout" json:"oxigraph_timeout"`
 }
 
 // ──────────────────────────────────────────────────────────────────────────────
@@ -250,6 +263,8 @@ func defaults() *Config {
 		DataService: DataServiceConfig{
 			Port:              8082,
 			SPARQLResultLimit: 100,
+			StoreType:         "memory",
+			OxigraphTimeout:   30,
 		},
 		Identity: IdentityConfig{
 			Port: 8083,

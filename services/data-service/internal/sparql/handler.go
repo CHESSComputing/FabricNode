@@ -26,11 +26,11 @@ import (
 
 // Handler provides SPARQL HTTP handlers backed by a Store.
 type Handler struct {
-	store *store.Store
+	store store.GraphStore
 }
 
 // New creates a Handler.
-func New(s *store.Store) *Handler { return &Handler{store: s} }
+func New(s store.GraphStore) *Handler { return &Handler{store: s} }
 
 // ServeHTTP handles global GET/POST /sparql.
 func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -75,17 +75,17 @@ func (h *Handler) DatasetHandler() http.HandlerFunc {
 }
 
 // GraphsHandler lists all named graphs.
-func GraphsHandler(s *store.Store) http.HandlerFunc {
+func GraphsHandler(s store.GraphStore) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(map[string]interface{}{
+		json.NewEncoder(w).Encode(map[string]any{
 			"graphs": s.Graphs(),
 		})
 	}
 }
 
 // BeamlineGraphsHandler lists named graphs for one beamline.
-func BeamlineGraphsHandler(s *store.Store) http.HandlerFunc {
+func BeamlineGraphsHandler(s store.GraphStore) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		bl := model.BeamlineID(chi.URLParam(r, "beamline"))
 		if !bl.Valid() {
@@ -93,7 +93,7 @@ func BeamlineGraphsHandler(s *store.Store) http.HandlerFunc {
 			return
 		}
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(map[string]interface{}{
+		json.NewEncoder(w).Encode(map[string]any{
 			"beamline": bl,
 			"graphs":   s.DatasetsForBeamline(bl),
 		})
@@ -156,7 +156,7 @@ func writeResults(w http.ResponseWriter, results []store.Triple) {
 	w.Header().Set("Content-Type", "application/sparql-results+json")
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 
-	type binding map[string]interface{}
+	type binding map[string]any
 	type row struct {
 		S binding `json:"s"`
 		P binding `json:"p"`

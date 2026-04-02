@@ -21,7 +21,7 @@ import (
 // Body: JSON array of store.Triple objects.  The Graph field of each triple is
 // overwritten by the canonical named-graph IRI derived from the DID, so callers
 // do not need to set it.
-func Triples(db *store.Store) http.HandlerFunc {
+func Triples(db store.GraphStore) http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
 		ref, ok := datasetRefFromPath(w, req)
 		if !ok {
@@ -39,7 +39,7 @@ func Triples(db *store.Store) http.HandlerFunc {
 		if !result.Conforms {
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusUnprocessableEntity)
-			json.NewEncoder(w).Encode(map[string]interface{}{
+			json.NewEncoder(w).Encode(map[string]any{
 				"conforms": false,
 				"errors":   result.Errors,
 			})
@@ -53,7 +53,7 @@ func Triples(db *store.Store) http.HandlerFunc {
 
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusCreated)
-		json.NewEncoder(w).Encode(map[string]interface{}{
+		json.NewEncoder(w).Encode(map[string]any{
 			"inserted":  len(triples),
 			"conforms":  true,
 			"beamline":  ref.Beamline,
@@ -66,7 +66,7 @@ func Triples(db *store.Store) http.HandlerFunc {
 // Validate handles dry-run SHACL validation without inserting triples.
 //
 //	POST /beamlines/{beamline}/datasets/{did}/validate
-func Validate(db *store.Store) http.HandlerFunc {
+func Validate(db store.GraphStore) http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
 		ref, ok := datasetRefFromPath(w, req)
 		if !ok {

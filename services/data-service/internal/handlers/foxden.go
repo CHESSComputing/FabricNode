@@ -15,7 +15,7 @@ import (
 // FoxdenConfig holds the runtime dependencies for FOXDEN-backed handlers.
 type FoxdenConfig struct {
 	Client *foxden.Client
-	Store  *store.Store
+	Store  store.GraphStore
 }
 
 // FoxdenDatasets lists FOXDEN metadata records for a beamline and returns

@@ -7,7 +7,7 @@ import (
 	"github.com/CHESSComputing/FabricNode/services/data-service/internal/store"
 )
 
-func Health(db *store.Store) http.HandlerFunc {
+func Health(db store.GraphStore) http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		fmt.Fprintf(w, `{"status":"ok","service":"data-service","graphs":%d}`, len(db.Graphs()))

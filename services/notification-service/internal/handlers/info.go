@@ -22,7 +22,7 @@ func Index(cfg *Config) http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		w.Header().Set("Link", `</inbox>; rel="http://www.w3.org/ns/ldp#inbox"`)
-		writeJSON(w, http.StatusOK, map[string]interface{}{
+		writeJSON(w, http.StatusOK, map[string]any{
 			"service": "notification-service",
 			"node":    cfg.NodeID,
 			"endpoints": map[string]string{

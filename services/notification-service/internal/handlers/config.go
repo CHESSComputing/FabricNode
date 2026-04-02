@@ -14,7 +14,7 @@ type Config struct {
 }
 
 // writeJSON writes a JSON-encoded value with the given HTTP status code.
-func writeJSON(w http.ResponseWriter, status int, v interface{}) {
+func writeJSON(w http.ResponseWriter, status int, v any) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
 	json.NewEncoder(w).Encode(v)

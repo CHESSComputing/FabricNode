@@ -22,7 +22,12 @@ func main() {
 		log.Printf("data-service: config warning: %v — using defaults", err)
 	}
 
-	db := store.New()
+	// ── Initialise graph store ───────────────────────────────────────────────
+	db, err := store.NewFromConfig(&cfg.DataService)
+	if err != nil {
+		log.Fatalf("data-service: graph store init: %v", err)
+	}
+	log.Printf("data-service: graph store type=%q", cfg.DataService.StoreType)
 
 	token := GetTokenFromFoxden(
 		cfg.Foxden.AuthzURL,
@@ -80,5 +85,3 @@ func main() {
 	log.Printf("data-service listening on :%s (foxden: %s)", port, cfg.Foxden.MetadataURL)
 	log.Fatal(http.ListenAndServe(":"+port, r))
 }
-
-
