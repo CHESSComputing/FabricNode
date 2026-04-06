@@ -7,14 +7,13 @@ import (
 	"net/url"
 
 	fabricconfig "github.com/CHESSComputing/FabricNode/pkg/config"
-	"github.com/CHESSComputing/FabricNode/services/catalog-service/internal/void"
 	"github.com/go-chi/chi/v5"
 )
 
 // Beamlines lists all registered beamlines as a DCAT JSON-LD catalog.
 //
 //	GET /catalog/beamlines
-func Beamlines(cfg void.NodeConfig, beamlines []fabricconfig.BeamlineConfig) http.HandlerFunc {
+func Beamlines(cfg *fabricconfig.Config, beamlines []fabricconfig.BeamlineConfig) http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
 		resp := map[string]any{
 			"@context": map[string]string{
@@ -22,7 +21,7 @@ func Beamlines(cfg void.NodeConfig, beamlines []fabricconfig.BeamlineConfig) htt
 				"dct":   "http://purl.org/dc/terms/",
 				"chess": "http://chess.cornell.edu/ns#",
 			},
-			"@id":          fmt.Sprintf("%s/catalog", cfg.BaseURL),
+			"@id":          fmt.Sprintf("%s/catalog", cfg.Node.BaseURL),
 			"@type":        "dcat:Catalog",
 			"dcat:dataset": beamlineEntries(cfg, beamlines),
 		}
@@ -36,7 +35,7 @@ func Beamlines(cfg void.NodeConfig, beamlines []fabricconfig.BeamlineConfig) htt
 // Datasets lists datasets registered under a specific beamline.
 //
 //	GET /catalog/beamlines/{beamline}/datasets
-func Datasets(cfg void.NodeConfig, beamlines []fabricconfig.BeamlineConfig) http.HandlerFunc {
+func Datasets(cfg *fabricconfig.Config, beamlines []fabricconfig.BeamlineConfig) http.HandlerFunc {
 	registry := make(map[string]fabricconfig.BeamlineConfig, len(beamlines))
 	for _, bl := range beamlines {
 		registry[bl.ID] = bl
@@ -58,7 +57,7 @@ func Datasets(cfg void.NodeConfig, beamlines []fabricconfig.BeamlineConfig) http
 				"dcat": "http://www.w3.org/ns/dcat#",
 				"dct":  "http://purl.org/dc/terms/",
 			},
-			"@id":          fmt.Sprintf("%s/catalog/beamlines/%s", cfg.BaseURL, bl.ID),
+			"@id":          fmt.Sprintf("%s/catalog/beamlines/%s", cfg.Node.BaseURL, bl.ID),
 			"@type":        "dcat:Catalog",
 			"dct:title":    bl.Label,
 			"dcat:dataset": datasetsForBeamline(cfg, bl),
@@ -70,15 +69,15 @@ func Datasets(cfg void.NodeConfig, beamlines []fabricconfig.BeamlineConfig) http
 	}
 }
 
-func beamlineEntries(cfg void.NodeConfig, beamlines []fabricconfig.BeamlineConfig) []map[string]any {
+func beamlineEntries(cfg *fabricconfig.Config, beamlines []fabricconfig.BeamlineConfig) []map[string]any {
 	out := make([]map[string]any, 0, len(beamlines))
 	for _, bl := range beamlines {
 		entry := map[string]any{
-			"@id":          fmt.Sprintf("%s/catalog/beamlines/%s", cfg.BaseURL, bl.ID),
+			"@id":          fmt.Sprintf("%s/catalog/beamlines/%s", cfg.Node.BaseURL, bl.ID),
 			"@type":        "dcat:Catalog",
 			"dct:title":    bl.Label,
 			"chess:blType": bl.Type,
-			"dcat:dataset": fmt.Sprintf("%s/catalog/beamlines/%s/datasets", cfg.BaseURL, bl.ID),
+			"dcat:dataset": fmt.Sprintf("%s/catalog/beamlines/%s/datasets", cfg.Node.BaseURL, bl.ID),
 		}
 		if bl.Location != "" {
 			entry["chess:location"] = bl.Location
@@ -90,8 +89,8 @@ func beamlineEntries(cfg void.NodeConfig, beamlines []fabricconfig.BeamlineConfi
 
 // datasetsForBeamline returns stub dataset entries.
 // Replace with a live call to data-service /beamlines/{beamline}/graphs in production.
-func datasetsForBeamline(cfg void.NodeConfig, bl fabricconfig.BeamlineConfig) []map[string]any {
-	dataURL := cfg.DataServiceURL
+func datasetsForBeamline(cfg *fabricconfig.Config, bl fabricconfig.BeamlineConfig) []map[string]any {
+	dataURL := cfg.Node.DataServiceURL
 	dids := []string{
 		fmt.Sprintf("/beamline=%s/btr=btr001/cycle=2024-3/sample_name=silicon-std", bl.ID),
 		fmt.Sprintf("/beamline=%s/btr=btr002/cycle=2024-3/sample_name=lysozyme-1", bl.ID),
@@ -100,7 +99,7 @@ func datasetsForBeamline(cfg void.NodeConfig, bl fabricconfig.BeamlineConfig) []
 	for _, did := range dids {
 		encodedDID := url.QueryEscape(did)
 		out = append(out, map[string]any{
-			"@id":       fmt.Sprintf("%s/catalog/beamlines/%s/datasets/%s", cfg.BaseURL, bl.ID, encodedDID),
+			"@id":       fmt.Sprintf("%s/catalog/beamlines/%s/datasets/%s", cfg.Node.BaseURL, bl.ID, encodedDID),
 			"@type":     "dcat:Dataset",
 			"dct:title": did,
 			"dcat:distribution": map[string]any{

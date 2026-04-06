@@ -11,22 +11,15 @@ import (
 	fabricconfig "github.com/CHESSComputing/FabricNode/pkg/config"
 	"github.com/CHESSComputing/FabricNode/pkg/server"
 	"github.com/CHESSComputing/FabricNode/services/catalog-service/internal/handlers"
-	"github.com/CHESSComputing/FabricNode/services/catalog-service/internal/void"
 )
 
 func main() {
-	nodeCfg, err := fabricconfig.Load(server.GetEnv("FABRIC_CONFIG", ""))
+	cfg, err := fabricconfig.Load(server.GetEnv("FABRIC_CONFIG", ""))
 	if err != nil {
 		log.Printf("catalog-service: config warning: %v — using defaults", err)
 	}
-	beamlines := nodeCfg.Catalog.Beamlines
-
-	cfg := void.NodeConfig{
-		BaseURL:        nodeCfg.Node.BaseURL,
-		NodeID:         nodeCfg.Node.ID,
-		NodeName:       nodeCfg.Node.Name,
-		DataServiceURL: server.GetEnv("DATA_SERVICE_URL", "http://localhost:8082"),
-	}
+	// cfg.Node.DataServiceURL is populated from the config file or the
+	// DATA_SERVICE_URL environment variable (applied by fabricconfig.Load).
 
 	r := chi.NewRouter()
 	r.Use(middleware.Logger)
@@ -47,15 +40,15 @@ func main() {
 	r.Get("/.well-known/sparql-examples", handlers.SPARQLExamples(cfg))
 
 	// ── Catalog: beamline + dataset discovery ────────────────────────────────
-	r.Get("/catalog/beamlines", handlers.Beamlines(cfg, beamlines))
-	r.Get("/catalog/beamlines/{beamline}/datasets", handlers.Datasets(cfg, beamlines))
+	r.Get("/catalog/beamlines", handlers.Beamlines(cfg, cfg.Catalog.Beamlines))
+	r.Get("/catalog/beamlines/{beamline}/datasets", handlers.Datasets(cfg, cfg.Catalog.Beamlines))
 
 	// ── Health + info ────────────────────────────────────────────────────────
 	r.Get("/health", handlers.Health(cfg))
 	r.Get("/", handlers.Index(cfg))
 
-	port := server.GetEnv("PORT", fmt.Sprintf("%d", nodeCfg.Catalog.Port))
+	port := server.GetEnv("PORT", fmt.Sprintf("%d", cfg.Catalog.Port))
 	log.Printf("catalog-service listening on :%s (node: %s, base: %s, beamlines: %d)",
-		port, cfg.NodeID, cfg.BaseURL, len(beamlines))
+		port, cfg.Node.ID, cfg.Node.BaseURL, len(cfg.Catalog.Beamlines))
 	log.Fatal(http.ListenAndServe(":"+port, r))
 }

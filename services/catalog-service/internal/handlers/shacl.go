@@ -5,10 +5,11 @@ import (
 	"log"
 	"net/http"
 
+	fabricconfig "github.com/CHESSComputing/FabricNode/pkg/config"
 	"github.com/CHESSComputing/FabricNode/services/catalog-service/internal/void"
 )
 
-func SHACL(cfg void.NodeConfig) http.HandlerFunc {
+func SHACL(cfg *fabricconfig.Config) http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
 		w.Header().Set("Content-Type", "text/turtle")
 		AddCacheHeaders(w, 3600)

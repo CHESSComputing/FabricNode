@@ -4,17 +4,17 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/CHESSComputing/FabricNode/services/catalog-service/internal/void"
+	fabricconfig "github.com/CHESSComputing/FabricNode/pkg/config"
 )
 
-func Health(cfg void.NodeConfig) http.HandlerFunc {
+func Health(cfg *fabricconfig.Config) http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
-		fmt.Fprintf(w, `{"status":"ok","service":"catalog-service","nodeId":%q}`, cfg.NodeID)
+		fmt.Fprintf(w, `{"status":"ok","service":"catalog-service","nodeId":%q}`, cfg.Node.ID)
 	}
 }
 
-func Index(cfg void.NodeConfig) http.HandlerFunc {
+func Index(cfg *fabricconfig.Config) http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		fmt.Fprint(w, `{

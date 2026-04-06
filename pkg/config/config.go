@@ -55,6 +55,11 @@ type NodeConfig struct {
 	// BaseURL is the externally reachable root URL of the node.
 	// Each service appends its own port, e.g. "https://fabric.chess.cornell.edu".
 	BaseURL string `yaml:"base_url" json:"base_url"`
+
+	// DataServiceURL is the base URL of the data-service reachable from the
+	// catalog-service.  Defaults to "http://localhost:8082".
+	// Can be overridden with the DATA_SERVICE_URL environment variable.
+	DataServiceURL string `yaml:"data_service_url" json:"data_service_url"`
 }
 
 // ──────────────────────────────────────────────────────────────────────────────
@@ -237,6 +242,9 @@ func (c *Config) ApplyEnv() {
 	if v := os.Getenv("FOXDEN_TOKEN"); v != "" {
 		c.Foxden.Token = v
 	}
+	if v := os.Getenv("DATA_SERVICE_URL"); v != "" {
+		c.Node.DataServiceURL = v
+	}
 }
 
 // ──────────────────────────────────────────────────────────────────────────────
@@ -248,9 +256,10 @@ func (c *Config) ApplyEnv() {
 func defaults() *Config {
 	return &Config{
 		Node: NodeConfig{
-			ID:      "chess-node",
-			Name:    "CHESS Federated Knowledge Fabric Node",
-			BaseURL: "http://localhost:8081",
+			ID:             "chess-node",
+			Name:           "CHESS Federated Knowledge Fabric Node",
+			BaseURL:        "http://localhost:8081",
+			DataServiceURL: "http://localhost:8082",
 		},
 		Catalog: CatalogConfig{
 			Port: 8081,

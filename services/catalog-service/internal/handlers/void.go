@@ -5,11 +5,12 @@ import (
 	"log"
 	"net/http"
 
+	fabricconfig "github.com/CHESSComputing/FabricNode/pkg/config"
 	"github.com/CHESSComputing/FabricNode/services/catalog-service/internal/rdf"
 	"github.com/CHESSComputing/FabricNode/services/catalog-service/internal/void"
 )
 
-func VoID(cfg void.NodeConfig) http.HandlerFunc {
+func VoID(cfg *fabricconfig.Config) http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
 		format := rdf.Negotiate(req)
 		w.Header().Set("Content-Type", string(format))
