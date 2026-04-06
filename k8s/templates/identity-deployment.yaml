@@ -1,0 +1,54 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: identity
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: identity
+  template:
+    metadata:
+      labels:
+        app: identity
+    spec:
+      containers:
+        - name: identity
+          image: {{ .Values.image.identity }}
+          ports:
+            - containerPort: {{ .Values.ports.identity }}
+          env:
+            - name: NODE_ID
+              value: {{ .Values.node.id | quote }}
+            - name: NODE_NAME
+              value: {{ .Values.node.name | quote }}
+            - name: PORT
+              value: "{{ .Values.ports.identity }}"
+            - name: NODE_BASE_URL
+              value: "http://identity:{{ .Values.ports.identity }}"
+            - name: CATALOG_URL
+              value: "http://catalog:{{ .Values.ports.catalog }}"
+            - name: DATA_URL
+              value: "http://data:{{ .Values.ports.data }}"
+            - name: NOTIFICATION_URL
+              value: "http://notifications:{{ .Values.ports.notifications }}"
+          volumeMounts:
+            - name: fabric-config
+              mountPath: /config/fabric.yaml
+              subPath: fabric.yaml
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: {{ .Values.ports.identity }}
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: {{ .Values.ports.identity }}
+            initialDelaySeconds: 3
+            periodSeconds: 5
+      volumes:
+        - name: fabric-config
+          secret:
+            secretName: fabric-config

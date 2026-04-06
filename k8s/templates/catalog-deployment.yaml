@@ -1,0 +1,48 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: catalog
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: catalog
+  template:
+    metadata:
+      labels:
+        app: catalog
+    spec:
+      containers:
+        - name: catalog
+          image: {{ .Values.image.catalog }}
+          ports:
+            - containerPort: {{ .Values.ports.catalog }}
+          env:
+            - name: NODE_ID
+              value: {{ .Values.node.id | quote }}
+            - name: NODE_NAME
+              value: {{ .Values.node.name | quote }}
+            - name: PORT
+              value: "{{ .Values.ports.catalog }}"
+            - name: NODE_BASE_URL
+              value: "http://catalog:{{ .Values.ports.catalog }}"
+          volumeMounts:
+            - name: fabric-config
+              mountPath: /config/fabric.yaml
+              subPath: fabric.yaml
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: {{ .Values.ports.catalog }}
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: {{ .Values.ports.catalog }}
+            initialDelaySeconds: 3
+            periodSeconds: 5
+      volumes:
+        - name: fabric-config
+          secret:
+            secretName: fabric-config

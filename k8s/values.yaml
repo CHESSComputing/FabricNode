@@ -1,0 +1,18 @@
+node:
+  id: chess-node
+  name: "CHESS Federated Knowledge Fabric Node"
+
+image:
+  catalog: chess/catalog:latest
+  data: chess/data:latest
+  identity: chess/identity:latest
+  notifications: chess/notifications:latest
+
+ports:
+  catalog: 8081
+  data: 8082
+  identity: 8083
+  notifications: 8084
+
+fabricConfig: |
+  # put your fabric.yaml content here
