@@ -32,6 +32,7 @@ type templateData struct {
 	NodeName       string
 	DataServiceURL string
 	ModifiedDate   string // "YYYY-MM-DD"
+	Beamlines      []fabricconfig.BeamlineConfig
 }
 
 // newData builds the template data model from a canonical config.
@@ -42,6 +43,7 @@ func newData(cfg *fabricconfig.Config) templateData {
 		NodeName:       cfg.Node.Name,
 		DataServiceURL: cfg.Node.DataServiceURL,
 		ModifiedDate:   time.Now().UTC().Format("2006-01-02"),
+		Beamlines:      cfg.Catalog.Beamlines,
 	}
 }
 

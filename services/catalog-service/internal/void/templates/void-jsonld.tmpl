@@ -4,7 +4,7 @@
     "dcat":  "http://www.w3.org/ns/dcat#",
     "dct":   "http://purl.org/dc/terms/",
     "rdfs":  "http://www.w3.org/2000/01/rdf-schema#",
-    "chess": "http://chess.cornell.edu/ns#"
+    "chess": "https://chess.cornell.edu/ns#"
   },
   "@id": "{{.BaseURL}}/catalog",
   "@type": "dcat:Catalog",
@@ -21,23 +21,27 @@
   },
 
   "dcat:catalog": [
+    {{- range $i, $b := .Beamlines }}
+    {{- if $i}},{{ end }}
     {
-      "@id": "{{.BaseURL}}/catalog/beamline-id1",
+      "@id": "{{$.BaseURL}}/catalog/{{$b.ID}}",
       "@type": "dcat:Catalog",
-      "rdfs:label": "Beamline ID1 — X-ray Diffraction",
-      "chess:beamlineType": "x-ray-diffraction"
-    },
-    {
-      "@id": "{{.BaseURL}}/catalog/beamline-id3",
-      "@type": "dcat:Catalog",
-      "rdfs:label": "Beamline ID3 — Protein Crystallography",
-      "chess:beamlineType": "protein-crystallography"
-    },
-    {
-      "@id": "{{.BaseURL}}/catalog/beamline-fast",
-      "@type": "dcat:Catalog",
-      "rdfs:label": "Beamline FAST — Time-Resolved Scattering",
-      "chess:beamlineType": "time-resolved-scattering"
+      "rdfs:label": "{{$b.Label}}",
+      "dct:description": "{{$b.Description}}",
+      "chess:beamlineType": "{{$b.Type}}",
+      "chess:location": "{{$b.Location}}"
+      {{- if $b.Alias }},
+      "chess:alias": "{{$b.Alias}}"
+      {{- end }}
+      {{- if $b.Partners }},
+      "chess:partner": [
+        {{- range $j, $p := $b.Partners }}
+        {{- if $j}},{{ end }}
+        "{{$p}}"
+        {{- end }}
+      ]
+      {{- end }}
     }
+    {{- end }}
   ]
 }
