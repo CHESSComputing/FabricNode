@@ -18,6 +18,7 @@ package config
 import (
 	"encoding/json"
 	"fmt"
+	"log"
 	"os"
 	"path/filepath"
 	"strings"
@@ -251,6 +252,7 @@ func (c *Config) ApplyEnv() {
 	if v := os.Getenv("DATA_SERVICE_URL"); v != "" {
 		c.Node.DataServiceURL = v
 	}
+	log.Printf("apply cfg %+v", c)
 }
 
 // ──────────────────────────────────────────────────────────────────────────────
