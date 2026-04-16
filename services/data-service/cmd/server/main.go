@@ -40,7 +40,7 @@ func main() {
 		token = GetToken(cfg.Foxden.Token)
 	}
 	if token == "" {
-		panic("unable to get FOXDEN token")
+		log.Println("WARNING: unable to get FOXDEN token...")
 	}
 	foxdenCfg := handlers.FoxdenConfig{
 		Client: foxden.NewClientWithToken(
