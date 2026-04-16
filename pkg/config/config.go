@@ -198,6 +198,8 @@ func Load(path string) (*Config, error) {
 	if err != nil {
 		return nil, fmt.Errorf("config: read %q: %w", resolved, err)
 	}
+	log.Printf("Using configuration %s", resolved)
+	log.Printf("Configuration data %v", string(data))
 
 	cfg := defaults()
 	if isJSON(resolved) {
