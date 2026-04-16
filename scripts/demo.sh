@@ -5,10 +5,10 @@
 # Run after: docker compose up --build  OR  all four services running locally
 set -euo pipefail
 
-CATALOG="http://localhost:8081"
-DATA="http://localhost:8082"
-IDENTITY="http://localhost:8083"
-NOTIFY="http://localhost:8084"
+CATALOG="http://localhost:8781"
+DATA="http://localhost:8782"
+IDENTITY="http://localhost:8783"
+NOTIFY="http://localhost:8784"
 JTYPE="Content-Type: application/ld+json"
 JJSON="Content-Type: application/json"
 
@@ -186,12 +186,12 @@ curl -s "$NOTIFY/inbox/stats" | jq .
 
 printf "\n\033[1;32m✅  Demo complete.\033[0m\n\n"
 printf "All four fabric layers demonstrated:\n"
-printf "  L1 VoID + PROF      → catalog:8081/.well-known/void\n"
-printf "  L3 SHACL            → catalog:8081/.well-known/shacl\n"
-printf "  L4 SPARQL examples  → catalog:8081/.well-known/sparql-examples\n"
-printf "  Catalog beamlines   → catalog:8081/catalog/beamlines\n"
-printf "  Data (global)       → data:8082/sparql\n"
-printf "  Data (beamline)     → data:8082/beamlines/{id}/sparql\n"
-printf "  Data (dataset)      → data:8082/beamlines/{id}/datasets/{did}/sparql\n"
-printf "  Identity (DID+VC)   → identity:8083/.well-known/did.json\n"
-printf "  Notifications (LDN) → notify:8084/inbox\n"
+printf "  L1 VoID + PROF      → catalog:8781/.well-known/void\n"
+printf "  L3 SHACL            → catalog:8781/.well-known/shacl\n"
+printf "  L4 SPARQL examples  → catalog:8781/.well-known/sparql-examples\n"
+printf "  Catalog beamlines   → catalog:8781/catalog/beamlines\n"
+printf "  Data (global)       → data:8782/sparql\n"
+printf "  Data (beamline)     → data:8782/beamlines/{id}/sparql\n"
+printf "  Data (dataset)      → data:8782/beamlines/{id}/datasets/{did}/sparql\n"
+printf "  Identity (DID+VC)   → identity:8783/.well-known/did.json\n"
+printf "  Notifications (LDN) → notify:8784/inbox\n"

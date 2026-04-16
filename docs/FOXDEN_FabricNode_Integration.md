@@ -13,10 +13,10 @@
    - 2.2 [FabricNode — Knowledge Graph Layer](#22-fabricnode--knowledge-graph-layer)
    - 2.3 [How They Complement Each Other](#23-how-they-complement-each-other)
 3. [FabricNode Architecture](#3-fabricnode-architecture)
-   - 3.1 [catalog-service](#31-catalog-service-port-8081)
-   - 3.2 [data-service](#32-data-service-port-8082)
-   - 3.3 [identity-service](#33-identity-service-port-8083)
-   - 3.4 [notification-service](#34-notification-service-port-8084)
+   - 3.1 [catalog-service](#31-catalog-service-port-8781)
+   - 3.2 [data-service](#32-data-service-port-8782)
+   - 3.3 [identity-service](#33-identity-service-port-8783)
+   - 3.4 [notification-service](#34-notification-service-port-8784)
 4. [Core Concepts](#4-core-concepts)
    - 4.1 [Beamline IDs](#41-beamline-ids)
    - 4.2 [Dataset DIDs](#42-dataset-dids)
@@ -131,14 +131,14 @@ FabricNode consists of four microservices. Each service is independently deploya
 ┌─────────────────────────────────────────────────────────────────┐
 │                        FabricNode                               │
 │                                                                 │
-│  catalog-service :8081    │  data-service :8082                 │
+│  catalog-service :8781    │  data-service :8782                 │
 │  ─────────────────────    │  ─────────────────────              │
 │  VoID · SHACL · PROF      │  RDF triple store                   │
 │  DCAT beamline catalog    │  SPARQL endpoint                    │
 │  Dataset listings         │  SHACL validation                   │
 │                           │  FOXDEN ingest                      │
 │  ───────────────────────────────────────────────                │
-│  identity-service :8083   │  notification-service :8084         │
+│  identity-service :8783   │  notification-service :8784         │
 │  ─────────────────────    │  ─────────────────────              │
 │  W3C DID document         │  W3C LDN inbox                      │
 │  Verifiable Credentials   │  Event notifications                │
@@ -149,7 +149,7 @@ FabricNode consists of four microservices. Each service is independently deploya
          (in-memory / Oxigraph)    (metadata, provenance, DOI)
 ```
 
-### 3.1 catalog-service (port 8081)
+### 3.1 catalog-service (port 8781)
 
 The catalog-service is the public face of the node. It serves:
 
@@ -160,7 +160,7 @@ The catalog-service is the public face of the node. It serves:
 
 The list of beamlines is driven by the node's configuration file (`config/fabric.yaml`) rather than hard-coded values, so adding a new beamline requires only a configuration change.
 
-### 3.2 data-service (port 8082)
+### 3.2 data-service (port 8782)
 
 The data-service is the RDF graph store. It:
 
@@ -171,7 +171,7 @@ The data-service is the RDF graph store. It:
 
 In the current implementation the store is in-memory. For production, the `store.Store` interface is designed for a one-line swap to Oxigraph or Apache Jena.
 
-### 3.3 identity-service (port 8083)
+### 3.3 identity-service (port 8783)
 
 The identity-service handles cryptographic identity for the node. It:
 
@@ -179,7 +179,7 @@ The identity-service handles cryptographic identity for the node. It:
 - Publishes a **W3C DID document** at `/.well-known/did.json` that binds the node's public key to its service endpoints.
 - Issues and verifies **Verifiable Credentials** — both the node-level conformance credential and dataset-level publication credentials requested by FOXDEN's DOI service.
 
-### 3.4 notification-service (port 8084)
+### 3.4 notification-service (port 8784)
 
 The notification-service implements a **W3C Linked Data Notifications (LDN)** inbox. Other services and external systems can send structured notifications to the node (e.g. "new run started", "dataset validated", "trust gap detected"), and the node processes or acknowledges them.
 
@@ -448,7 +448,7 @@ The identity-service responds with a signed `DatasetPublicationCredential`:
     "fabric:graphIRI":        "http://chess.cornell.edu/graph/3a/btr=test-123-a/...",
     "schema:identifier":      "10.5281/zenodo.123456",
     "schema:url":             "https://doi.org/10.5281/zenodo.123456",
-    "dcat:accessURL":         "http://chess-node:8082/beamlines/3a/datasets/.../sparql",
+    "dcat:accessURL":         "http://chess-node:8782/beamlines/3a/datasets/.../sparql",
     "chess:beamline":         "3a",
     "prov:wasAttributedTo":   "did:web:chess-node",
     "prov:generatedAtTime":   "2026-03-31T10:00:00Z"
@@ -589,10 +589,10 @@ If no file is found, safe defaults are used (all services run locally on their s
 node:
   id: chess-node
   name: CHESS Federated Knowledge Fabric Node
-  base_url: http://localhost:8081
+  base_url: http://localhost:8781
 
 catalog:
-  port: 8081
+  port: 8781
   beamlines:
     - id: id1
       label: "Beamline ID1 — X-ray Diffraction"
@@ -606,14 +606,14 @@ catalog:
       type: time-resolved-scattering
 
 data_service:
-  port: 8082
+  port: 8782
   sparql_result_limit: 100
 
 identity:
-  port: 8083
+  port: 8783
 
 notification:
-  port: 8084
+  port: 8784
 
 foxden:
   metadata_url:   http://localhost:8300

@@ -30,8 +30,8 @@ Options:
   --did        Dataset DID (required)
   --doi        DOI string, e.g. 10.5281/zenodo.123456 (required)
   --doi-url    Resolvable DOI URL (required)
-  --identity   identity-service base URL  (default: http://localhost:8083)
-  --data       data-service base URL      (default: http://localhost:8082)
+  --identity   identity-service base URL  (default: http://localhost:8783)
+  --data       data-service base URL      (default: http://localhost:8782)
   --foxden     FOXDEN base URL            (default: http://localhost:8300)
   --ingest     Also ingest the dataset into data-service before issuing VC
   --verbose    Print full JSON request/response bodies
@@ -164,7 +164,7 @@ def resolve_did(results, identity_url, verbose):
     # Expected shape:
     # {
     #   "@context": ["https://www.w3.org/ns/did/v1", ...],
-    #   "id": "did:web:localhost%3A8083",
+    #   "id": "did:web:localhost%3A8783",
     #   "verificationMethod": [{"id": "...", "type": "Ed25519VerificationKey2020", ...}],
     #   "service": [{"type": "SPARQLEndpoint", "serviceEndpoint": "..."}, ...]
     # }
@@ -253,7 +253,7 @@ def issue_credential(results, identity_url, did_str, doi, doi_url, verbose):
     #     "fabric:graphIRI": "http://chess.cornell.edu/graph/3a/...",
     #     "schema:identifier": "10.5281/zenodo.123456",
     #     "schema:url": "https://doi.org/10.5281/zenodo.123456",
-    #     "dcat:accessURL": "http://localhost:8082/beamlines/3a/datasets/.../sparql",
+    #     "dcat:accessURL": "http://localhost:8782/beamlines/3a/datasets/.../sparql",
     #     "chess:beamline": "3a",
     #     "prov:wasAttributedTo": "did:web:...",
     #     "prov:generatedAtTime": "2026-..."
@@ -410,8 +410,8 @@ def main():
     parser.add_argument("--did",      required=True,  help="Dataset DID, e.g. /beamline=3a/btr=.../...")
     parser.add_argument("--doi",      required=True,  help="DOI string, e.g. 10.5281/zenodo.123456")
     parser.add_argument("--doi-url",  required=True,  help="Resolvable DOI URL")
-    parser.add_argument("--identity", default="http://localhost:8083", help="identity-service URL")
-    parser.add_argument("--data",     default="http://localhost:8082", help="data-service URL")
+    parser.add_argument("--identity", default="http://localhost:8783", help="identity-service URL")
+    parser.add_argument("--data",     default="http://localhost:8782", help="data-service URL")
     parser.add_argument("--foxden",   default="http://localhost:8300", help="FOXDEN URL")
     parser.add_argument("--ingest",   action="store_true", help="Ingest dataset into data-service first")
     parser.add_argument("--verbose",  action="store_true", help="Print full JSON bodies")

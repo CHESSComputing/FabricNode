@@ -19,13 +19,13 @@ services:
     build: ./services/catalog-service
     container_name: chess-catalog
     ports:
-      - "8081:8081"
+      - "8781:8781"
     environment:
       <<: *common-env
-      PORT:         "8081"
-      NODE_BASE_URL: "http://localhost:8081"
+      PORT:         "8781"
+      NODE_BASE_URL: "http://localhost:8781"
     healthcheck:
-      test: ["CMD-SHELL", "wget -qO- http://localhost:8081/health || exit 1"]
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8781/health || exit 1"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -35,12 +35,12 @@ services:
     build: ./services/data-service
     container_name: chess-data
     ports:
-      - "8082:8082"
+      - "8782:8782"
     environment:
       <<: *common-env
-      PORT: "8082"
+      PORT: "8782"
     healthcheck:
-      test: ["CMD-SHELL", "wget -qO- http://localhost:8082/health || exit 1"]
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8782/health || exit 1"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -50,21 +50,21 @@ services:
     build: ./services/identity-service
     container_name: chess-identity
     ports:
-      - "8083:8083"
+      - "8783:8783"
     environment:
       <<: *common-env
-      PORT:             "8083"
-      NODE_BASE_URL:    "http://localhost:8083"
-      CATALOG_URL:      "http://catalog:8081"
-      DATA_URL:         "http://data:8082"
-      NOTIFICATION_URL: "http://notifications:8084"
+      PORT:             "8783"
+      NODE_BASE_URL:    "http://localhost:8783"
+      CATALOG_URL:      "http://catalog:8781"
+      DATA_URL:         "http://data:8782"
+      NOTIFICATION_URL: "http://notifications:8784"
     depends_on:
       catalog:
         condition: service_healthy
       data:
         condition: service_healthy
     healthcheck:
-      test: ["CMD-SHELL", "wget -qO- http://localhost:8083/health || exit 1"]
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8783/health || exit 1"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -74,12 +74,12 @@ services:
     build: ./services/notification-service
     container_name: chess-notifications
     ports:
-      - "8084:8084"
+      - "8784:8784"
     environment:
       <<: *common-env
-      PORT: "8084"
+      PORT: "8784"
     healthcheck:
-      test: ["CMD-SHELL", "wget -qO- http://localhost:8084/health || exit 1"]
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8784/health || exit 1"]
       interval: 10s
       timeout: 5s
       retries: 5

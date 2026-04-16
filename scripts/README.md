@@ -13,8 +13,8 @@ make probe KEY=btr VALUE=test-123-a DRY_RUN=1 VERBOSE=1
 
 CHESS FabricNode — integration probe
   FOXDEN:   http://localhost:8300
-  data:     http://localhost:8082
-  catalog:  http://localhost:8081
+  data:     http://localhost:8782
+  catalog:  http://localhost:8781
   search:   btr='test-123-a'  limit=5
   dry-run: ingest and SPARQL steps will be skipped
 

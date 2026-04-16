@@ -27,7 +27,7 @@ FOXDEN's DOI service mints a DOI for a dataset (via DataCite or similar). For th
 When FOXDEN's DOI service mints a DOI for a dataset it makes one HTTP call to the FabricNode:
 
 ```
-POST http://localhost:8083/credentials/dataset
+POST http://localhost:8783/credentials/dataset
 {
   "did":     "/beamline=3a/btr=test-123-a/cycle=2026-1/sample_name=PAT-7271",
   "doi":     "10.5281/zenodo.123456",

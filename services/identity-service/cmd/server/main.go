@@ -27,8 +27,8 @@ func main() {
 	baseURL    := server.GetEnv("NODE_BASE_URL", fmt.Sprintf("http://localhost:%d", cfg.Identity.Port))
 	nodeID     := cfg.Node.ID
 	nodeName   := cfg.Node.Name
-	catalogURL := server.GetEnv("CATALOG_URL", "http://localhost:8081")
-	dataURL    := server.GetEnv("DATA_URL", "http://localhost:8082")
+	catalogURL := server.GetEnv("CATALOG_URL", "http://localhost:8781")
+	dataURL    := server.GetEnv("DATA_URL", "http://localhost:8782")
 	notifyURL  := server.GetEnv("NOTIFICATION_URL", fmt.Sprintf("http://localhost:%d", cfg.Notification.Port))
 
 	// ── Generate key pair at startup ─────────────────────────────────────────

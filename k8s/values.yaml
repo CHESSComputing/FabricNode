@@ -9,10 +9,10 @@ image:
   notifications: chess/notifications:latest
 
 ports:
-  catalog: 8081
-  data: 8082
-  identity: 8083
-  notifications: 8084
+  catalog: 8781
+  data: 8782
+  identity: 8783
+  notifications: 8784
 
 fabricConfig: |
   # put your fabric.yaml content here

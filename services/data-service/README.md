@@ -41,28 +41,28 @@ must have `sosa:resultTime`, `sosa:madeBySensor`, and `sosa:observedProperty`.
 
 ```bash
 # List all named graphs
-curl http://localhost:8082/graphs
+curl http://localhost:8782/graphs
 
 # Get all triples (default limit 100)
-curl http://localhost:8082/sparql
+curl http://localhost:8782/sparql
 
 # Filter by graph
-curl "http://localhost:8082/sparql?g=http://chess.cornell.edu/graph/beamlines"
+curl "http://localhost:8782/sparql?g=http://chess.cornell.edu/graph/beamlines"
 
 # Filter by subject
-curl "http://localhost:8082/sparql?s=http://chess.cornell.edu/beamline/id1"
+curl "http://localhost:8782/sparql?s=http://chess.cornell.edu/beamline/id1"
 
 # Filter by predicate (find all SOSA Observations)
-curl "http://localhost:8082/sparql?p=http://www.w3.org/1999/02/22-rdf-syntax-ns%23type&o=http://www.w3.org/ns/sosa/Observation"
+curl "http://localhost:8782/sparql?p=http://www.w3.org/1999/02/22-rdf-syntax-ns%23type&o=http://www.w3.org/ns/sosa/Observation"
 
 # DESCRIBE a beamline resource
-curl "http://localhost:8082/sparql?describe=http://chess.cornell.edu/beamline/id1"
+curl "http://localhost:8782/sparql?describe=http://chess.cornell.edu/beamline/id1"
 
 # Keyword search
-curl "http://localhost:8082/sparql?search=diffraction"
+curl "http://localhost:8782/sparql?search=diffraction"
 
 # Insert SHACL-validated observation triples
-curl -X POST http://localhost:8082/triples \
+curl -X POST http://localhost:8782/triples \
   -H "Content-Type: application/json" \
   -d '[
     {
@@ -96,7 +96,7 @@ curl -X POST http://localhost:8082/triples \
   ]'
 
 # Dry-run validation (no insertion)
-curl -X POST http://localhost:8082/validate \
+curl -X POST http://localhost:8782/validate \
   -H "Content-Type: application/json" \
   -d '[{"subject":"http://chess.cornell.edu/obs/x","predicate":"http://www.w3.org/1999/02/22-rdf-syntax-ns#type","object":"http://www.w3.org/ns/sosa/Observation","objectType":"uri","graph":"http://chess.cornell.edu/graph/observations"}]'
 # → {"conforms":false,"errors":["missing required sosa:resultTime", ...]}

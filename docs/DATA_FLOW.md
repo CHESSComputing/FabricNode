@@ -46,10 +46,10 @@ The DID maps to a named-graph IRI in the triple store:
 
 | Service              | Port  | Responsibility                                  |
 |----------------------|-------|-------------------------------------------------|
-| catalog-service      | 8081  | VoID/SHACL/PROF self-description; beamline + dataset catalogue |
-| data-service         | 8082  | RDF triple store; SPARQL; SHACL-validated writes |
-| identity-service     | 8083  | DID documents; Verifiable Credentials           |
-| notification-service | 8084  | W3C LDN inbox; event delivery                  |
+| catalog-service      | 8781  | VoID/SHACL/PROF self-description; beamline + dataset catalogue |
+| data-service         | 8782  | RDF triple store; SPARQL; SHACL-validated writes |
+| identity-service     | 8783  | DID documents; Verifiable Credentials           |
+| notification-service | 8784  | W3C LDN inbox; event delivery                  |
 
 ---
 
@@ -86,12 +86,12 @@ Encoded:  %2Fbeamline%3Did3a%2Fbtr%3Dval123%2Fcycle%3D2024-3%2Fsample_name%3Dtha
 
 Full URL:
 ```
-POST http://localhost:8082/beamlines/id3a/datasets/%2Fbeamline%3Did3a%2Fbtr%3Dval123%2Fcycle%3D2024-3%2Fsample_name%3Dthaumatin-a/triples
+POST http://localhost:8782/beamlines/id3a/datasets/%2Fbeamline%3Did3a%2Fbtr%3Dval123%2Fcycle%3D2024-3%2Fsample_name%3Dthaumatin-a/triples
 ```
 
 Using the Go client:
 ```go
-client := client.New("http://localhost:8082")
+client := client.New("http://localhost:8782")
 ref := model.DatasetRef{
     Beamline: "id3a",
     DID:      "/beamline=id3a/btr=val123/cycle=2024-3/sample_name=thaumatin-a",
@@ -181,14 +181,14 @@ Beamline-scope queries match any graph with prefix
 
 ```bash
 # List beamlines
-curl http://localhost:8081/catalog/beamlines
+curl http://localhost:8781/catalog/beamlines
 
 # List datasets for beamline id3a
-curl http://localhost:8081/catalog/beamlines/id3a/datasets
+curl http://localhost:8781/catalog/beamlines/id3a/datasets
 
 # Insert an observation
 DID_ENC=$(python3 -c "import urllib.parse; print(urllib.parse.quote('/beamline=id3a/btr=btr101/cycle=2024-3/sample_name=thaumatin-a'))")
-curl -X POST "http://localhost:8082/beamlines/id3a/datasets/${DID_ENC}/triples" \
+curl -X POST "http://localhost:8782/beamlines/id3a/datasets/${DID_ENC}/triples" \
   -H 'Content-Type: application/json' \
   -d '[{
     "subject": "http://chess.cornell.edu/observation/test-01",
@@ -198,11 +198,11 @@ curl -X POST "http://localhost:8082/beamlines/id3a/datasets/${DID_ENC}/triples" 
   }]'
 
 # Query a dataset
-curl "http://localhost:8082/beamlines/id3a/datasets/${DID_ENC}/sparql"
+curl "http://localhost:8782/beamlines/id3a/datasets/${DID_ENC}/sparql"
 
 # Query all datasets for a beamline
-curl "http://localhost:8082/beamlines/id3a/sparql"
+curl "http://localhost:8782/beamlines/id3a/sparql"
 
 # List named graphs for a beamline
-curl "http://localhost:8082/beamlines/id3a/graphs"
+curl "http://localhost:8782/beamlines/id3a/graphs"
 ```

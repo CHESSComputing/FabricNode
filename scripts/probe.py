@@ -18,8 +18,8 @@ Options:
   --key        FOXDEN field name to search on
   --value      Value to match
   --foxden     FOXDEN base URL          (default: http://localhost:8300)
-  --data       data-service base URL    (default: http://localhost:8082)
-  --catalog    catalog-service base URL (default: http://localhost:8081)
+  --data       data-service base URL    (default: http://localhost:8782)
+  --catalog    catalog-service base URL (default: http://localhost:8781)
   --limit      Max FOXDEN records to process (default: 5)
   --dry-run    Search and validate FOXDEN only; skip ingest and SPARQL steps
   --verbose    Print full JSON bodies at each step
@@ -450,7 +450,7 @@ def verify_catalog(results: Results, catalog_url: str, ingested: list[dict], ver
     # Expected shape from GET /catalog/beamlines/{beamline}/datasets:
     # {
     #   "@context": { "dcat": "...", "dct": "..." },
-    #   "@id":      "http://localhost:8081/catalog/beamlines/3a",
+    #   "@id":      "http://localhost:8781/catalog/beamlines/3a",
     #   "@type":    "dcat:Catalog",
     #   "dcat:dataset": [
     #     {
@@ -556,8 +556,8 @@ def main():
     parser.add_argument("--key",     required=True,  help="FOXDEN field to search on (e.g. btr, cycle, beamline)")
     parser.add_argument("--value",   required=True,  help="Value to match")
     parser.add_argument("--foxden",  default="http://localhost:8300", help="FOXDEN base URL")
-    parser.add_argument("--data",    default="http://localhost:8082", help="data-service base URL")
-    parser.add_argument("--catalog", default="http://localhost:8081", help="catalog-service base URL")
+    parser.add_argument("--data",    default="http://localhost:8782", help="data-service base URL")
+    parser.add_argument("--catalog", default="http://localhost:8781", help="catalog-service base URL")
     parser.add_argument("--limit",   type=int, default=5, help="Max FOXDEN records to process")
     parser.add_argument("--dry-run", action="store_true", help="Search FOXDEN only; skip ingest and SPARQL")
     parser.add_argument("--verbose", action="store_true", help="Print full JSON request/response bodies")

@@ -57,7 +57,7 @@ type NodeConfig struct {
 	BaseURL string `yaml:"base_url" json:"base_url"`
 
 	// DataServiceURL is the base URL of the data-service reachable from the
-	// catalog-service.  Defaults to "http://localhost:8082".
+	// catalog-service.  Defaults to "http://localhost:8782".
 	// Can be overridden with the DATA_SERVICE_URL environment variable.
 	DataServiceURL string `yaml:"data_service_url" json:"data_service_url"`
 }
@@ -68,7 +68,7 @@ type NodeConfig struct {
 
 // CatalogConfig configures the catalog-service.
 type CatalogConfig struct {
-	// Port the catalog-service listens on (default: 8081).
+	// Port the catalog-service listens on (default: 8781).
 	Port int `yaml:"port" json:"port"`
 
 	// Beamlines is the registry of beamlines served by this node.
@@ -101,7 +101,7 @@ type BeamlineConfig struct {
 
 // DataServiceConfig configures the data-service.
 type DataServiceConfig struct {
-	// Port the data-service listens on (default: 8082).
+	// Port the data-service listens on (default: 8782).
 	Port int `yaml:"port" json:"port"`
 
 	// SPARQLResultLimit caps the number of triples returned by any SPARQL query.
@@ -127,7 +127,7 @@ type DataServiceConfig struct {
 
 // IdentityConfig configures the identity-service.
 type IdentityConfig struct {
-	// Port the identity-service listens on (default: 8083).
+	// Port the identity-service listens on (default: 8783).
 	Port int `yaml:"port" json:"port"`
 }
 
@@ -137,7 +137,7 @@ type IdentityConfig struct {
 
 // NotificationConfig configures the notification-service.
 type NotificationConfig struct {
-	// Port the notification-service listens on (default: 8084).
+	// Port the notification-service listens on (default: 8784).
 	Port int `yaml:"port" json:"port"`
 }
 
@@ -258,11 +258,11 @@ func defaults() *Config {
 		Node: NodeConfig{
 			ID:             "chess-node",
 			Name:           "CHESS Federated Knowledge Fabric Node",
-			BaseURL:        "http://localhost:8081",
-			DataServiceURL: "http://localhost:8082",
+			BaseURL:        "http://localhost:8781",
+			DataServiceURL: "http://localhost:8782",
 		},
 		Catalog: CatalogConfig{
-			Port: 8081,
+			Port: 8781,
 			Beamlines: []BeamlineConfig{
 				{ID: "id1", Label: "Beamline ID1 — X-ray Diffraction", Type: "x-ray-diffraction", Location: "CHESS Wilson Laboratory"},
 				{ID: "id3a", Label: "Beamline ID3A — Protein Crystallography", Type: "protein-crystallography"},
@@ -270,16 +270,16 @@ func defaults() *Config {
 			},
 		},
 		DataService: DataServiceConfig{
-			Port:              8082,
+			Port:              8782,
 			SPARQLResultLimit: 100,
 			StoreType:         "memory",
 			OxigraphTimeout:   30,
 		},
 		Identity: IdentityConfig{
-			Port: 8083,
+			Port: 8783,
 		},
 		Notification: NotificationConfig{
-			Port: 8084,
+			Port: 8784,
 		},
 		Foxden: FoxdenConfig{
 			MetadataURL: "http://localhost:8300",

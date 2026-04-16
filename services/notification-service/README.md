@@ -34,16 +34,16 @@ that any LDN-aware client can use without prior integration.
 | Variable | Default | Description |
 |----------|---------|-------------|
 | `NODE_ID` | `chess-node` | Node identifier |
-| `PORT` | `8084` | Listen port |
+| `PORT` | `8784` | Listen port |
 
 ## curl Examples
 
 ```bash
 # List all notifications
-curl http://localhost:8084/inbox | jq .
+curl http://localhost:8784/inbox | jq .
 
 # Send a new-run notification (JSON-LD body)
-curl -X POST http://localhost:8084/inbox \
+curl -X POST http://localhost:8784/inbox \
   -H "Content-Type: application/ld+json" \
   -d '{
     "@context": "https://www.w3.org/ns/activitystreams",
@@ -58,7 +58,7 @@ curl -X POST http://localhost:8084/inbox \
   }'
 
 # Send a trust-gap notification (surfaces to researcher inbox)
-curl -X POST http://localhost:8084/inbox \
+curl -X POST http://localhost:8784/inbox \
   -H "Content-Type: application/ld+json" \
   -d '{
     "@context": "https://w3id.org/cogitarelink/fabric/v1",
@@ -72,16 +72,16 @@ curl -X POST http://localhost:8084/inbox \
   }'
 
 # Retrieve a specific notification by ID
-curl http://localhost:8084/inbox/urn:uuid:SOME-UUID | jq .
+curl http://localhost:8784/inbox/urn:uuid:SOME-UUID | jq .
 
 # Acknowledge a notification
-curl -X POST http://localhost:8084/inbox/urn:uuid:SOME-UUID/ack | jq .
+curl -X POST http://localhost:8784/inbox/urn:uuid:SOME-UUID/ack | jq .
 
 # Filter by type
-curl "http://localhost:8084/inbox?type=fabric:PendingTask" | jq .
+curl "http://localhost:8784/inbox?type=fabric:PendingTask" | jq .
 
 # Stats
-curl http://localhost:8084/inbox/stats | jq .
+curl http://localhost:8784/inbox/stats | jq .
 ```
 
 ## LDN Discovery

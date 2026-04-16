@@ -95,7 +95,7 @@ func (d *Document) JSON() []byte {
 func domainFromURL(u string) string {
 	u = stripScheme(u)
 	// Replace port colon with %3A for did:web (spec requirement)
-	// e.g. localhost:8083 → localhost%3A8083
+	// e.g. localhost:8783 → localhost%3A8783
 	for i, c := range u {
 		if c == ':' {
 			return u[:i] + "%3A" + u[i+1:]

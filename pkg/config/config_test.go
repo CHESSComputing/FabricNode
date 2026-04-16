@@ -15,7 +15,7 @@ node:
   base_url: http://test.example.org
 
 catalog:
-  port: 8081
+  port: 8781
   beamlines:
     - id: id1
       label: "Beamline ID1 — X-ray Diffraction"
@@ -26,7 +26,7 @@ catalog:
       type: protein-crystallography
 
 data_service:
-  port: 8082
+  port: 8782
   sparql_result_limit: 200
 
 foxden:
@@ -66,7 +66,7 @@ func TestLoadYAML(t *testing.T) {
 func TestLoadJSON(t *testing.T) {
 	const sampleJSON = `{
 		"node": {"id": "json-node", "name": "JSON Node", "base_url": "http://json.example.org"},
-		"catalog": {"port": 8081, "beamlines": [{"id": "fast", "label": "FAST", "type": "time-resolved-scattering"}]}
+		"catalog": {"port": 8781, "beamlines": [{"id": "fast", "label": "FAST", "type": "time-resolved-scattering"}]}
 	}`
 	f := writeTmp(t, "fabric.json", sampleJSON)
 	cfg, err := config.Load(f)
@@ -105,8 +105,8 @@ func TestDefaults(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Load: %v", err)
 	}
-	if cfg.DataService.Port != 8082 {
-		t.Errorf("DataService.Port default: got %d want 8082", cfg.DataService.Port)
+	if cfg.DataService.Port != 8782 {
+		t.Errorf("DataService.Port default: got %d want 8782", cfg.DataService.Port)
 	}
 	if cfg.DataService.SPARQLResultLimit != 100 {
 		t.Errorf("SPARQLResultLimit default: got %d want 100", cfg.DataService.SPARQLResultLimit)

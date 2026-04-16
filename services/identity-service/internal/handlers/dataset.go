@@ -196,7 +196,7 @@ func sparqlEndpointFromDID(s *NodeState, did string) string {
 		}
 	}
 	if sparqlBase == "" {
-		sparqlBase = "http://localhost:8082"
+		sparqlBase = "http://localhost:8782"
 	}
 
 	bl := beamlineFromDID(did)

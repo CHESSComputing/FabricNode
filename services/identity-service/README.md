@@ -21,35 +21,35 @@ verification endpoints.
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `NODE_BASE_URL` | `http://localhost:8083` | Public base URL |
+| `NODE_BASE_URL` | `http://localhost:8783` | Public base URL |
 | `NODE_ID` | `chess-node` | Node identifier |
 | `NODE_NAME` | `CHESS Federated Knowledge Fabric Node` | Human label |
-| `CATALOG_URL` | `http://localhost:8081` | URL of the catalog service |
-| `DATA_URL` | `http://localhost:8082` | URL of the data service |
-| `NOTIFICATION_URL` | `http://localhost:8084` | URL of the notification service |
-| `PORT` | `8083` | Listen port |
+| `CATALOG_URL` | `http://localhost:8781` | URL of the catalog service |
+| `DATA_URL` | `http://localhost:8782` | URL of the data service |
+| `NOTIFICATION_URL` | `http://localhost:8784` | URL of the notification service |
+| `PORT` | `8783` | Listen port |
 
 ## curl Examples
 
 ```bash
 # Retrieve the DID document
-curl http://localhost:8083/.well-known/did.json | jq .
+curl http://localhost:8783/.well-known/did.json | jq .
 
 # Retrieve the self-issued FabricConformanceCredential
-curl http://localhost:8083/credentials/conformance | jq .
+curl http://localhost:8783/credentials/conformance | jq .
 
 # Verify the conformance credential (round-trip test)
-CRED=$(curl -s http://localhost:8083/credentials/conformance)
-curl -X POST http://localhost:8083/credentials/verify \
+CRED=$(curl -s http://localhost:8783/credentials/conformance)
+curl -X POST http://localhost:8783/credentials/verify \
   -H "Content-Type: application/json" \
   -d "$CRED" | jq .
 # → {"verified":true,"issuer":"did:web:...","verificationMethod":"...#node-key-1"}
 
 # Retrieve the node's Ed25519 public key
-curl http://localhost:8083/keys/node-key-1 | jq .
+curl http://localhost:8783/keys/node-key-1 | jq .
 
 # Health check (confirms DID)
-curl http://localhost:8083/health | jq .
+curl http://localhost:8783/health | jq .
 ```
 
 ## What the DID Document Contains

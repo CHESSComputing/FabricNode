@@ -16,7 +16,7 @@ specific layer of the W3C-standards-based self-description stack defined in the
 └──────┬──────────────┬─────────────────┬──────────────┬──────────┘
        │              │                 │              │
        ▼              ▼                 ▼              ▼
- :8081 catalog  :8082 data       :8083 identity  :8084 notifications
+ :8781 catalog  :8782 data       :8783 identity  :8784 notifications
  ─────────────  ──────────────   ──────────────  ─────────────────
  L1 VoID        SPARQL endpoint  did:web DID doc  W3C LDN inbox
  L1 PROF        Named graphs     Conformance VC   PendingTask alerts
@@ -29,10 +29,10 @@ specific layer of the W3C-standards-based self-description stack defined in the
 
 | Service | Port | Role |
 |---------|------|------|
-| **catalog-service** | 8081 | Four-layer self-description (VoID/PROF/SHACL/SPARQL examples) |
-| **data-service** | 8082 | SPARQL triple store with SHACL-validated writes |
-| **identity-service** | 8083 | DID document + Verifiable Credential issuance/verification |
-| **notification-service** | 8084 | W3C LDN inbox for inter-node messaging |
+| **catalog-service** | 8781 | Four-layer self-description (VoID/PROF/SHACL/SPARQL examples) |
+| **data-service** | 8782 | SPARQL triple store with SHACL-validated writes |
+| **identity-service** | 8783 | DID document + Verifiable Credential issuance/verification |
+| **notification-service** | 8784 | W3C LDN inbox for inter-node messaging |
 
 ## Quick Start
 
@@ -48,10 +48,10 @@ make start
 
 SERVICE                  STATUS   PID    PORT       HEALTH
 ──────────────────────────────────────────────────────────────────────
-catalog-service          running               83022  8081       healthy
-data-service             running               83030  8082       healthy
-identity-service         running               83103  8083       healthy
-notification-service     running               83111  8084       healthy
+catalog-service          running               83022  8781       healthy
+data-service             running               83030  8782       healthy
+identity-service         running               83103  8783       healthy
+notification-service     running               83111  8784       healthy
 
 # Run the end-to-end demo
 make demo
@@ -59,12 +59,12 @@ make demo
 Demo complete.
 
 All four fabric layers demonstrated:
-  L1 VoID + PROF    → catalog:8081/.well-known/void
-  L3 SHACL          → catalog:8081/.well-known/shacl
-  L4 SPARQL examples → catalog:8081/.well-known/sparql-examples
-  Data              → data:8082/sparql
-  Identity (DID+VC) → identity:8083/.well-known/did.json
-  Notifications(LDN)→ notifications:8084/inbox
+  L1 VoID + PROF    → catalog:8781/.well-known/void
+  L3 SHACL          → catalog:8781/.well-known/shacl
+  L4 SPARQL examples → catalog:8781/.well-known/sparql-examples
+  Data              → data:8782/sparql
+  Identity (DID+VC) → identity:8783/.well-known/did.json
+  Notifications(LDN)→ notifications:8784/inbox
 
 # Check all service health
 make health
@@ -78,22 +78,22 @@ make clean/all
 An LLM-based agent following the Knowledge Fabric progressive disclosure pattern:
 
 ```
-1. GET /.well-known/void        (catalog:8081)
+1. GET /.well-known/void        (catalog:8781)
    → learns which CHESS beamlines exist; finds SPARQL endpoint URL
 
-2. GET /.well-known/shacl       (catalog:8081)
+2. GET /.well-known/shacl       (catalog:8781)
    → learns Observations need resultTime, madeBySensor, observedProperty
 
-3. GET /.well-known/sparql-examples (catalog:8081)
+3. GET /.well-known/sparql-examples (catalog:8781)
    → copies working query templates
 
-4. GET /sparql?g=...observations (data:8082)
+4. GET /sparql?g=...observations (data:8782)
    → queries calibrated measurement data
 
-5. GET /.well-known/did.json    (identity:8083)
+5. GET /.well-known/did.json    (identity:8783)
    → resolves node identity, discovers all service endpoints
 
-6. POST /inbox                  (notifications:8084)
+6. POST /inbox                  (notifications:8784)
    → subscribes to new-run events
 ```
 

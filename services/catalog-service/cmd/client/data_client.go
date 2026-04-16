@@ -23,7 +23,7 @@ type DataClient struct {
 	httpClient *http.Client
 }
 
-// New creates a DataClient pointed at baseURL (e.g. "http://localhost:8082").
+// New creates a DataClient pointed at baseURL (e.g. "http://localhost:8782").
 func New(baseURL string) *DataClient {
 	return &DataClient{
 		baseURL: baseURL,

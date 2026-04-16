@@ -24,10 +24,10 @@ All endpoints support **content negotiation** via `Accept` header:
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `NODE_BASE_URL` | `http://localhost:8081` | Public base URL of this node |
+| `NODE_BASE_URL` | `http://localhost:8781` | Public base URL of this node |
 | `NODE_ID` | `chess-node` | Node identifier |
 | `NODE_NAME` | `CHESS Federated Knowledge Fabric Node` | Human label |
-| `PORT` | `8081` | Listen port |
+| `PORT` | `8781` | Listen port |
 
 ## Running
 
@@ -37,30 +37,30 @@ make run
 
 # Docker
 docker build -t catalog-service .
-docker run -p 8081:8081 catalog-service
+docker run -p 8781:8781 catalog-service
 ```
 
 ## curl Examples
 
 ```bash
 # L1 — VoID dataset description (Turtle)
-curl http://localhost:8081/.well-known/void
+curl http://localhost:8781/.well-known/void
 
 # L1 — VoID as JSON-LD
 curl -H "Accept: application/ld+json" \
-     http://localhost:8081/.well-known/void
+     http://localhost:8781/.well-known/void
 
 # L1 — PROF capability profile
-curl http://localhost:8081/.well-known/profile
+curl http://localhost:8781/.well-known/profile
 
 # L3 — SHACL shapes (shows ObservationShape, BeamlineShape)
-curl http://localhost:8081/.well-known/shacl
+curl http://localhost:8781/.well-known/shacl
 
 # L4 — SPARQL examples catalog
-curl http://localhost:8081/.well-known/sparql-examples
+curl http://localhost:8781/.well-known/sparql-examples
 
 # Health
-curl http://localhost:8081/health
+curl http://localhost:8781/health
 ```
 
 ## What an Agent Sees
@@ -104,7 +104,7 @@ or produce datasets. Below you can see a hierarchical structure:
 
 ```
 SendTriples(
-    "http://localhost:8081",
+    "http://localhost:8781",
     "id3a",
     "/beamline=id3a/btr=val123/cycle=123/sample_name=bla",
     "<rdf triples>"

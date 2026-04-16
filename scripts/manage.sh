@@ -35,17 +35,17 @@ mkdir -p "$RUN_DIR" "$LOG_DIR"
 # ── Service registry ──────────────────────────────────────────────────────────
 # Format: name:port:binary_path:env_overrides
 declare -A SVC_PORT=(
-  [catalog-service]=8081
-  [data-service]=8082
-  [identity-service]=8083
-  [notification-service]=8084
+  [catalog-service]=8781
+  [data-service]=8782
+  [identity-service]=8783
+  [notification-service]=8784
 )
 
 declare -A SVC_ENV=(
-  [catalog-service]="PORT=8081 NODE_BASE_URL=http://localhost:8081"
-  [data-service]="PORT=8082"
-  [identity-service]="PORT=8083 NODE_BASE_URL=http://localhost:8083 CATALOG_URL=http://localhost:8081 DATA_URL=http://localhost:8082 NOTIFICATION_URL=http://localhost:8084"
-  [notification-service]="PORT=8084"
+  [catalog-service]="PORT=8781 NODE_BASE_URL=http://localhost:8781"
+  [data-service]="PORT=8782"
+  [identity-service]="PORT=8783 NODE_BASE_URL=http://localhost:8783 CATALOG_URL=http://localhost:8781 DATA_URL=http://localhost:8782 NOTIFICATION_URL=http://localhost:8784"
+  [notification-service]="PORT=8784"
 )
 
 ALL_SERVICES=(catalog-service data-service identity-service notification-service)

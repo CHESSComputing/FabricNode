@@ -86,16 +86,16 @@ Defines Kubernetes Services for internal communication:
 
 | Service       | Port |
 | ------------- | ---- |
-| catalog       | 8081 |
-| data          | 8082 |
-| identity      | 8083 |
-| notifications | 8084 |
+| catalog       | 8781 |
+| data          | 8782 |
+| identity      | 8783 |
+| notifications | 8784 |
 
 These enable DNS-based access inside the cluster:
 
 ```
-http://catalog:8081
-http://data:8082
+http://catalog:8781
+http://data:8782
 ```
 
 ---
@@ -160,10 +160,10 @@ fabricConfig: |
 
 ```
 ports:
-  catalog: 8081
-  data: 8082
-  identity: 8083
-  notifications: 8084
+  catalog: 8781
+  data: 8782
+  identity: 8783
+  notifications: 8784
 ```
 
 ---
@@ -238,10 +238,10 @@ helm uninstall fabric-node
 Inside cluster:
 
 ```
-catalog        → http://catalog:8081
-data           → http://data:8082
-identity       → http://identity:8083
-notifications  → http://notifications:8084
+catalog        → http://catalog:8781
+data           → http://data:8782
+identity       → http://identity:8783
+notifications  → http://notifications:8784
 ```
 
 ---
