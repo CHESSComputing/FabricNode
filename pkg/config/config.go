@@ -199,20 +199,22 @@ func Load(path string) (*Config, error) {
 		return nil, fmt.Errorf("config: read %q: %w", resolved, err)
 	}
 	log.Printf("Using configuration %s", resolved)
-	log.Printf("Configuration data %v", string(data))
+	log.Printf("Configuration data\n%v", string(data))
 
 	cfg := defaults()
-	if isJSON(resolved) {
-		if err := json.Unmarshal(data, cfg); err != nil {
-			return nil, fmt.Errorf("config: parse JSON %q: %w", resolved, err)
-		}
+	if resolved == "" {
+		cfg.ApplyEnv()
 	} else {
-		if err := yaml.Unmarshal(data, cfg); err != nil {
-			return nil, fmt.Errorf("config: parse YAML %q: %w", resolved, err)
+		if isJSON(resolved) {
+			if err := json.Unmarshal(data, cfg); err != nil {
+				return nil, fmt.Errorf("config: parse JSON %q: %w", resolved, err)
+			}
+		} else {
+			if err := yaml.Unmarshal(data, cfg); err != nil {
+				return nil, fmt.Errorf("config: parse YAML %q: %w", resolved, err)
+			}
 		}
 	}
-
-	cfg.ApplyEnv()
 	return cfg, nil
 }
 
