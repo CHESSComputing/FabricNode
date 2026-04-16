@@ -82,6 +82,11 @@ func main() {
 	r.Get("/", handlers.Index())
 
 	port := server.GetEnv("PORT", fmt.Sprintf("%d", cfg.DataService.Port))
-	log.Printf("data-service listening on :%s (foxden: %s)", port, cfg.Foxden.MetadataURL)
-	log.Fatal(http.ListenAndServe(":"+port, r))
+	if cfg.TSLConfig.ServerKey == "" && cfg.TSLConfig.ServerCert == "" {
+		log.Printf("HTTP data-service listening on :%s (foxden: %s)", port, cfg.Foxden.MetadataURL)
+		log.Fatal(http.ListenAndServe(":"+port, r))
+	} else {
+		log.Printf("HTTPs data-service listening on :%s (foxden: %s)", port, cfg.Foxden.MetadataURL)
+		log.Fatal(http.ListenAndServeTLS(":"+port, cfg.TSLConfig.ServerCert, cfg.TSLConfig.ServerKey, r))
+	}
 }

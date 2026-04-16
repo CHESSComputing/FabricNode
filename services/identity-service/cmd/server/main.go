@@ -24,12 +24,12 @@ func main() {
 		log.Printf("identity-service: config warning: %v — using defaults", err)
 	}
 
-	baseURL    := server.GetEnv("NODE_BASE_URL", fmt.Sprintf("http://localhost:%d", cfg.Identity.Port))
-	nodeID     := cfg.Node.ID
-	nodeName   := cfg.Node.Name
+	baseURL := server.GetEnv("NODE_BASE_URL", fmt.Sprintf("http://localhost:%d", cfg.Identity.Port))
+	nodeID := cfg.Node.ID
+	nodeName := cfg.Node.Name
 	catalogURL := server.GetEnv("CATALOG_URL", "http://localhost:8781")
-	dataURL    := server.GetEnv("DATA_URL", "http://localhost:8782")
-	notifyURL  := server.GetEnv("NOTIFICATION_URL", fmt.Sprintf("http://localhost:%d", cfg.Notification.Port))
+	dataURL := server.GetEnv("DATA_URL", "http://localhost:8782")
+	notifyURL := server.GetEnv("NOTIFICATION_URL", fmt.Sprintf("http://localhost:%d", cfg.Notification.Port))
 
 	// ── Generate key pair at startup ─────────────────────────────────────────
 	kp, err := did.NewKeyPair()
@@ -61,7 +61,7 @@ func main() {
 		},
 	}
 	didDoc := did.New(baseURL, nodeID, kp, services)
-	keyID  := didDoc.ID + "#node-key-1"
+	keyID := didDoc.ID + "#node-key-1"
 
 	// ── Self-issue FabricConformanceCredential ───────────────────────────────
 	conformVC := &vc.FabricConformanceCredential{
@@ -104,17 +104,22 @@ func main() {
 	r.Use(middleware.RequestID)
 	r.Use(server.ReadWriteCORS())
 
-	r.Get("/.well-known/did.json",       handlers.DIDDocument(state))
-	r.Get("/credentials/conformance",     handlers.ConformanceVC(state))
-	r.Post("/credentials/verify",         handlers.VerifyVC(state))
-	r.Post("/credentials/dataset",        handlers.IssueDatasetCredential(state))
+	r.Get("/.well-known/did.json", handlers.DIDDocument(state))
+	r.Get("/credentials/conformance", handlers.ConformanceVC(state))
+	r.Post("/credentials/verify", handlers.VerifyVC(state))
+	r.Post("/credentials/dataset", handlers.IssueDatasetCredential(state))
 	r.Post("/credentials/dataset/verify", handlers.VerifyDatasetCredential(state))
-	r.Get("/did/{did}",                   handlers.DIDResolve(state))
-	r.Get("/keys/node-key-1",             handlers.PublicKey(state))
-	r.Get("/health",                      handlers.Health(state))
-	r.Get("/",                            handlers.Index(state))
+	r.Get("/did/{did}", handlers.DIDResolve(state))
+	r.Get("/keys/node-key-1", handlers.PublicKey(state))
+	r.Get("/health", handlers.Health(state))
+	r.Get("/", handlers.Index(state))
 
 	port := server.GetEnv("PORT", fmt.Sprintf("%d", cfg.Identity.Port))
-	log.Printf("identity-service listening on :%s (DID: %s)", port, didDoc.ID)
-	log.Fatal(http.ListenAndServe(":"+port, r))
+	if cfg.TSLConfig.ServerKey == "" && cfg.TSLConfig.ServerCert == "" {
+		log.Printf("HTTP identity-service listening on :%s (DID: %s)", port, didDoc.ID)
+		log.Fatal(http.ListenAndServe(":"+port, r))
+	} else {
+		log.Printf("HTTPs identity-service listening on :%s (DID: %s)", port, didDoc.ID)
+		log.Fatal(http.ListenAndServeTLS(":"+port, cfg.TSLConfig.ServerCert, cfg.TSLConfig.ServerKey, r))
+	}
 }

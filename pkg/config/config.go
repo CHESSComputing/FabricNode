@@ -29,6 +29,11 @@ import (
 // Top-level config struct
 // ──────────────────────────────────────────────────────────────────────────────
 
+type TLSConfig struct {
+	ServerKey  string `yaml:"server_key" json:"server_key"`
+	ServerCert string `yaml:"server_cert" jaon:"server_key"`
+}
+
 // Config is the root configuration document.
 // Every section is optional; missing sections fall back to safe defaults.
 type Config struct {
@@ -38,6 +43,7 @@ type Config struct {
 	Identity     IdentityConfig     `yaml:"identity"     json:"identity"`
 	Notification NotificationConfig `yaml:"notification" json:"notification"`
 	Foxden       FoxdenConfig       `yaml:"foxden"       json:"foxden"`
+	TSLConfig    TLSConfig          `yaml:"tls" json:"tls"`
 }
 
 // ──────────────────────────────────────────────────────────────────────────────
@@ -282,12 +288,12 @@ func defaults() *Config {
 			Port: 8784,
 		},
 		Foxden: FoxdenConfig{
-			MetadataURL: "http://localhost:8300",
+			MetadataURL:   "http://localhost:8300",
 			ProvenanceURL: "http://localhost:8310",
-			DOIURL: "http://localhost:8377",
-			AuthzURL: "http://localhost:8380",
-			TokenScope: "read+write",
-			Timeout:     10,
+			DOIURL:        "http://localhost:8377",
+			AuthzURL:      "http://localhost:8380",
+			TokenScope:    "read+write",
+			Timeout:       10,
 		},
 	}
 }

@@ -33,15 +33,20 @@ func main() {
 	r.Use(middleware.RequestID)
 	r.Use(server.ReadWriteCORS())
 
-	r.Get("/inbox",           handlers.InboxList(hcfg))
-	r.Post("/inbox",          handlers.InboxReceive(hcfg))
-	r.Get("/inbox/{id}",      handlers.InboxGet(hcfg))
+	r.Get("/inbox", handlers.InboxList(hcfg))
+	r.Post("/inbox", handlers.InboxReceive(hcfg))
+	r.Get("/inbox/{id}", handlers.InboxGet(hcfg))
 	r.Post("/inbox/{id}/ack", handlers.InboxAck(hcfg))
-	r.Get("/inbox/stats",     handlers.InboxStats(hcfg))
-	r.Get("/health",          handlers.Health(hcfg))
-	r.Get("/",                handlers.Index(hcfg))
+	r.Get("/inbox/stats", handlers.InboxStats(hcfg))
+	r.Get("/health", handlers.Health(hcfg))
+	r.Get("/", handlers.Index(hcfg))
 
 	port := server.GetEnv("PORT", fmt.Sprintf("%d", cfg.Notification.Port))
-	log.Printf("notification-service listening on :%s (node: %s)", port, hcfg.NodeID)
-	log.Fatal(http.ListenAndServe(":"+port, r))
+	if cfg.TSLConfig.ServerKey == "" && cfg.TSLConfig.ServerCert == "" {
+		log.Printf("HTTP notification-service listening on :%s (node: %s)", port, hcfg.NodeID)
+		log.Fatal(http.ListenAndServe(":"+port, r))
+	} else {
+		log.Printf("HTTPs notification-service listening on :%s (node: %s)", port, hcfg.NodeID)
+		log.Fatal(http.ListenAndServeTLS(":"+port, cfg.TSLConfig.ServerCert, cfg.TSLConfig.ServerKey, r))
+	}
 }

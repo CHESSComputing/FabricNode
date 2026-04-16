@@ -48,7 +48,13 @@ func main() {
 	r.Get("/", handlers.Index(cfg))
 
 	port := server.GetEnv("PORT", fmt.Sprintf("%d", cfg.Catalog.Port))
-	log.Printf("catalog-service listening on :%s (node: %s, base: %s, beamlines: %d)",
-		port, cfg.Node.ID, cfg.Node.BaseURL, len(cfg.Catalog.Beamlines))
-	log.Fatal(http.ListenAndServe(":"+port, r))
+	if cfg.TSLConfig.ServerKey == "" && cfg.TSLConfig.ServerCert == "" {
+		log.Printf("HTTP catalog-service listening on :%s (node: %s, base: %s, beamlines: %d)",
+			port, cfg.Node.ID, cfg.Node.BaseURL, len(cfg.Catalog.Beamlines))
+		log.Fatal(http.ListenAndServe(":"+port, r))
+	} else {
+		log.Printf("HTTPs catalog-service listening on :%s (node: %s, base: %s, beamlines: %d)",
+			port, cfg.Node.ID, cfg.Node.BaseURL, len(cfg.Catalog.Beamlines))
+		log.Fatal(http.ListenAndServeTLS(":"+port, cfg.TSLConfig.ServerCert, cfg.TSLConfig.ServerKey, r))
+	}
 }
