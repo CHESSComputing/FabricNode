@@ -100,6 +100,12 @@ type BeamlineConfig struct {
 
 	// Description is an optional long-form description.
 	Description string `yaml:"description,omitempty" json:"description,omitempty"`
+
+	// Alias is alias for beamline
+	Alias string `yaml:"alias,omitempty" json:"alias,omitempty"`
+
+	// Partners is a list of partners
+	Partners []string `yaml:"partners,omitempty" json:"partners,omitempty"`
 }
 
 // ──────────────────────────────────────────────────────────────────────────────
