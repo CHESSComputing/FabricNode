@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -126,9 +127,15 @@ type DidResponse struct {
 // helper function to get dids from FOXDEN
 func getDids(cfg *fabricconfig.Config, bl string) ([]string, error) {
 	var dids []string
+	spec := make(map[string]string)
+	spec["beamline"] = bl
+	data, err := json.Marshal(spec)
+	if err != nil {
+		return dids, err
+	}
 	// setup http client
 	rurl := fmt.Sprintf("%s/records?projection=did", cfg.Foxden.MetadataURL)
-	req, err := http.NewRequest("GET", rurl, nil)
+	req, err := http.NewRequest("GET", rurl, bytes.NewBuffer(data))
 	if err != nil {
 		return dids, err
 	}
@@ -140,7 +147,7 @@ func getDids(cfg *fabricconfig.Config, bl string) ([]string, error) {
 		return dids, err
 	}
 	defer resp.Body.Close()
-	data, err := io.ReadAll(resp.Body)
+	data, err = io.ReadAll(resp.Body)
 	if err != nil {
 		return dids, err
 	}
