@@ -54,7 +54,8 @@ func (d DatasetDID) Segments() ([][2]string, error) {
 	for _, p := range parts {
 		idx := strings.IndexByte(p, '=')
 		if idx < 1 {
-			return nil, fmt.Errorf("invalid DID segment %q: expected key=value", p)
+			fmt.Errorf("did=%s, invalid DID segment %q: expected key=value", raw, p)
+			continue
 		}
 		out = append(out, [2]string{p[:idx], p[idx+1:]})
 	}
