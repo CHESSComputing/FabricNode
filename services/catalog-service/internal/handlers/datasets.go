@@ -150,7 +150,10 @@ func getDids(cfg *fabricconfig.Config, bl string) ([]string, error) {
 		return dids, err
 	}
 	for _, r := range records {
-		dids = append(dids, r.Did)
+		pat := fmt.Sprintf("beamline=%s", bl)
+		if strings.Contains(r.Did, pat) {
+			dids = append(dids, r.Did)
+		}
 	}
 	return dids, nil
 }
