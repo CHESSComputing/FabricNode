@@ -49,11 +49,9 @@ for BL in $BEAMLINES; do
   RESP=$(curl -ks "$URL")
   echo "$RESP" | jq '.["@id"], (.["dcat:dataset"] | length)'
 
-  # Extract dataset access URLs (SPARQL endpoints)
-  URLS=$(echo "$RESP" | jq -r '
-    .["dcat:dataset"][]? |
-    .["dcat:distribution"]["dcat:accessURL"]
-  ' | head -n "$LIMIT")
+  echo "Extract dataset access URLs (SPARQL endpoints)..."
+  URLS=$(echo "$RESP" | jq -r '.["dcat:dataset"][]? | .["dcat:distribution"]["dcat:accessURL"]')
+  URLS=$(echo "$URLS" | head -n "$LIMIT")
 
   for U in $URLS; do
     DATASETS+=("$BL|$U")
