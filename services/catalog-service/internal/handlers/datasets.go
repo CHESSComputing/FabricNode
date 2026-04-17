@@ -3,8 +3,12 @@ package handlers
 import (
 	"encoding/json"
 	"fmt"
+	"io"
+	"log"
 	"net/http"
 	"net/url"
+	"os"
+	"strings"
 
 	fabricconfig "github.com/CHESSComputing/FabricNode/pkg/config"
 	"github.com/go-chi/chi/v5"
@@ -87,13 +91,79 @@ func beamlineEntries(cfg *fabricconfig.Config, beamlines []fabricconfig.Beamline
 	return out
 }
 
+// helper function to get token
+func getToken(v string) string {
+	if v == "" {
+		log.Fatal("empty token source provided")
+	}
+
+	// Case 1: v is a file path
+	if info, err := os.Stat(v); err == nil && !info.IsDir() {
+		data, err := os.ReadFile(v)
+		if err != nil {
+			log.Fatalf("failed to read token file %s: %v", v, err)
+		}
+		token := strings.TrimSpace(string(data))
+		if token == "" {
+			log.Fatalf("token file %s is empty", v)
+		}
+		return token
+	}
+
+	// Case 2: treat v as env variable name
+	token := strings.TrimSpace(os.Getenv(v))
+	if token == "" {
+		log.Fatalf("environment variable %s is not set or empty", v)
+	}
+
+	return token
+}
+
+type DidResponse struct {
+	Did string `json:"did"`
+}
+
+// helper function to get dids from FOXDEN
+func getDids(cfg *fabricconfig.Config, bl string) ([]string, error) {
+	var dids []string
+	// setup http client
+	rurl := fmt.Sprintf("%s/records?projection=did", cfg.Foxden.MetadataURL)
+	req, err := http.NewRequest("GET", rurl, nil)
+	if err != nil {
+		return dids, err
+	}
+	req.Header.Add("Authorization", fmt.Sprintf("Bearer %s", getToken(cfg.Foxden.Token)))
+	req.Header.Add("Content-Type", "application/json")
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		return dids, err
+	}
+	defer resp.Body.Close()
+	data, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return dids, err
+	}
+	var records []DidResponse
+	err = json.Unmarshal(data, &records)
+	if err != nil {
+		return dids, err
+	}
+	for _, r := range records {
+		dids = append(dids, r.Did)
+	}
+	return dids, nil
+}
+
 // datasetsForBeamline returns stub dataset entries.
 // Replace with a live call to data-service /beamlines/{beamline}/graphs in production.
 func datasetsForBeamline(cfg *fabricconfig.Config, bl fabricconfig.BeamlineConfig) []map[string]any {
 	dataURL := cfg.Node.DataServiceURL
-	dids := []string{
-		fmt.Sprintf("/beamline=%s/btr=btr001/cycle=2024-3/sample_name=silicon-std", bl.ID),
-		fmt.Sprintf("/beamline=%s/btr=btr002/cycle=2024-3/sample_name=lysozyme-1", bl.ID),
+	// query FOXDEN for all dids with our beamline
+	dids, err := getDids(cfg, bl.ID)
+	if err != nil {
+		log.Println("ERROR: unable to obtain dids from FOXDEN beamline %s, error %v", bl.ID, err)
+		return make([]map[string]any, 0, 0)
 	}
 	out := make([]map[string]any, 0, len(dids))
 	for _, did := range dids {
