@@ -177,7 +177,7 @@ func datasetsForBeamline(cfg *fabricconfig.Config, bl fabricconfig.BeamlineConfi
 	}
 	out := make([]map[string]any, 0, len(dids))
 	for _, did := range dids {
-		encodedDID := url.QueryEscape(did)
+		encodedDID := url.PathEscape(did)
 		out = append(out, map[string]any{
 			"@id":       fmt.Sprintf("%s/catalog/beamlines/%s/datasets/%s", cfg.Node.BaseURL, bl.ID, encodedDID),
 			"@type":     "dcat:Dataset",

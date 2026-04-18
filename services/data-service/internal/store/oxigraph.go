@@ -30,26 +30,31 @@ import (
 
 // OxigraphStore is the Oxigraph-backed GraphStore implementation.
 type OxigraphStore struct {
-	queryURL  string      // e.g. "http://localhost:7878/query"
-	updateURL string      // e.g. "http://localhost:7878/update"
-	client    *http.Client
+	queryURL     string // e.g. "http://localhost:7878/query"
+	updateURL    string // e.g. "http://localhost:7878/update"
+	client       *http.Client
+	graphIRIBase string // e.g. "http://chess.cornell.edu/"
 }
 
 // Verify interface compliance at compile time.
 var _ GraphStore = (*OxigraphStore)(nil)
 
-// NewOxigraphStore creates an OxigraphStore that talks to the server at
-// baseURL (e.g. "http://localhost:7878").  timeout is the HTTP client timeout;
-// pass 0 to use the default (30 s).
-func NewOxigraphStore(baseURL string, timeout time.Duration) *OxigraphStore {
+// NewOxigraphStoreWithBase creates an OxigraphStore with a configurable graph
+// IRI base prefix (e.g. from DataServiceConfig.GraphIRIBase).
+// graphIRIBase must end with a trailing slash.
+func NewOxigraphStoreWithBase(baseURL, graphIRIBase string, timeout time.Duration) *OxigraphStore {
 	if timeout == 0 {
 		timeout = 30 * time.Second
 	}
+	if graphIRIBase == "" {
+		graphIRIBase = "http://chess.cornell.edu"
+	}
 	base := strings.TrimRight(baseURL, "/")
 	return &OxigraphStore{
-		queryURL:  base + "/query",
-		updateURL: base + "/update",
-		client:    &http.Client{Timeout: timeout},
+		queryURL:     base + "/query",
+		updateURL:    base + "/update",
+		client:       &http.Client{Timeout: timeout},
+		graphIRIBase: strings.TrimSuffix(graphIRIBase, "/"),
 	}
 }
 
@@ -87,7 +92,7 @@ func (s *OxigraphStore) QueryBeamline(bl model.BeamlineID, subject, predicate, o
 	if !bl.Valid() {
 		return nil, fmt.Errorf("oxigraph: invalid beamline id %q", bl)
 	}
-	prefix := fmt.Sprintf("http://chess.cornell.edu/graph/%s/", strings.ToLower(string(bl)))
+	prefix := fmt.Sprintf("%s/graph/%s/", s.graphIRIBase, strings.ToLower(string(bl)))
 	// Use SPARQL regex on graph IRI to match all beamline datasets.
 	sparql := buildSelectWithGraphFilter(subject, predicate, object, prefix)
 	return s.runQuery(sparql)
@@ -95,7 +100,7 @@ func (s *OxigraphStore) QueryBeamline(bl model.BeamlineID, subject, predicate, o
 
 // DatasetsForBeamline returns the graph IRIs of every dataset that belongs to bl.
 func (s *OxigraphStore) DatasetsForBeamline(bl model.BeamlineID) []string {
-	prefix := fmt.Sprintf("http://chess.cornell.edu/graph/%s/", strings.ToLower(string(bl)))
+	prefix := fmt.Sprintf("%s/graph/%s/", s.graphIRIBase, strings.ToLower(string(bl)))
 	sparql := fmt.Sprintf(`SELECT DISTINCT ?g WHERE { GRAPH ?g { ?s ?p ?o } FILTER(STRSTARTS(STR(?g), %s)) }`,
 		sparqlString(prefix))
 	rows, err := s.execSelect(sparql)
@@ -168,7 +173,7 @@ func (s *OxigraphStore) KeywordSearch(keyword string) []Triple {
 
 // sparqlBinding is one cell in a SPARQL results row.
 type sparqlBinding struct {
-	Type     string `json:"type"`     // "uri", "literal", "bnode"
+	Type     string `json:"type"` // "uri", "literal", "bnode"
 	Value    string `json:"value"`
 	Datatype string `json:"datatype,omitempty"`
 	Lang     string `json:"xml:lang,omitempty"`

@@ -17,16 +17,21 @@ import (
 //
 // An unknown store type returns an error; callers should treat this as fatal.
 func NewFromConfig(cfg *fabricconfig.DataServiceConfig) (GraphStore, error) {
+	graphBase := cfg.GraphIRIBase
+	if graphBase == "" {
+		graphBase = "http://chess.cornell.edu/"
+	}
+
 	switch cfg.StoreType {
 	case "", "memory":
-		return NewMemoryStore(), nil
+		return NewMemoryStoreWithBase(graphBase), nil
 
 	case "oxigraph":
 		if cfg.OxigraphURL == "" {
 			return nil, fmt.Errorf("store: oxigraph selected but data_service.oxigraph_url is not set")
 		}
 		timeout := time.Duration(cfg.OxigraphTimeout) * time.Second
-		return NewOxigraphStore(cfg.OxigraphURL, timeout), nil
+		return NewOxigraphStoreWithBase(cfg.OxigraphURL, graphBase, timeout), nil
 
 	default:
 		return nil, fmt.Errorf("store: unknown store_type %q (valid: memory, oxigraph)", cfg.StoreType)

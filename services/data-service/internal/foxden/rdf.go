@@ -28,13 +28,21 @@ const (
 	nsXSD   = "http://www.w3.org/2001/XMLSchema#"
 	nsPROV  = "http://www.w3.org/ns/prov#"
 
-	chessBase = "http://chess.cornell.edu/"
+	// defaultChessBase is the fallback when no DatasetIRIBase is configured.
+	defaultChessBase = "http://chess.cornell.edu/"
 )
 
 // RecordToTriples converts one FOXDEN metadata record into a slice of
 // store.Triple values, all tagged with graphIRI.
+// datasetIRIBase is the configurable prefix for dataset subject IRIs
+// (from DataServiceConfig.DatasetIRIBase); pass "" to use the default.
 // Returns an error only if the record is missing its DID.
-func RecordToTriples(rec Record, graphIRI string) ([]store.Triple, error) {
+func RecordToTriples(rec Record, graphIRI, datasetIRIBase string) ([]store.Triple, error) {
+	if datasetIRIBase == "" {
+		datasetIRIBase = defaultChessBase
+	}
+	chessBase := strings.TrimSuffix(datasetIRIBase, "/") + "/"
+
 	did := rec.DID()
 	if did == "" {
 		return nil, fmt.Errorf("foxden: record missing 'did' field")
@@ -63,26 +71,26 @@ func RecordToTriples(rec Record, graphIRI string) ([]store.Triple, error) {
 
 	// Well-known scalar fields
 	scalarMap := map[string]string{
-		"btr":          nsCHESS + "btr",
-		"cycle":        nsCHESS + "cycle",
-		"schema":       nsCHESS + "schema",
-		"facility":     nsCHESS + "facility",
-		"user":         nsCHESS + "user",
-		"pi":           nsDCT + "creator",
-		"experimenters": nsCHESS + "experimenters",
-		"sample_name":  nsCHESS + "sampleName",
-		"sample_common_name": nsCHESS + "sampleCommonName",
-		"sample_geometry":    nsCHESS + "sampleGeometry",
-		"sample_state":       nsCHESS + "sampleState",
-		"sample_mat_ped_heat_treatment":    nsCHESS + "heatTreatment",
-		"sample_mat_ped_processing_route":  nsCHESS + "processingRoute",
-		"beam_energy":  nsCHESS + "beamEnergy",
-		"date":         nsDCT + "date",
-		"doi":          nsDCT + "relation",
-		"data_location_raw":      nsCHESS + "dataLocationRaw",
-		"data_location_reduced":  nsCHESS + "dataLocationReduced",
-		"data_location_meta":     nsCHESS + "dataLocationMeta",
-		"data_location_scratch":  nsCHESS + "dataLocationScratch",
+		"btr":                             nsCHESS + "btr",
+		"cycle":                           nsCHESS + "cycle",
+		"schema":                          nsCHESS + "schema",
+		"facility":                        nsCHESS + "facility",
+		"user":                            nsCHESS + "user",
+		"pi":                              nsDCT + "creator",
+		"experimenters":                   nsCHESS + "experimenters",
+		"sample_name":                     nsCHESS + "sampleName",
+		"sample_common_name":              nsCHESS + "sampleCommonName",
+		"sample_geometry":                 nsCHESS + "sampleGeometry",
+		"sample_state":                    nsCHESS + "sampleState",
+		"sample_mat_ped_heat_treatment":   nsCHESS + "heatTreatment",
+		"sample_mat_ped_processing_route": nsCHESS + "processingRoute",
+		"beam_energy":                     nsCHESS + "beamEnergy",
+		"date":                            nsDCT + "date",
+		"doi":                             nsDCT + "relation",
+		"data_location_raw":               nsCHESS + "dataLocationRaw",
+		"data_location_reduced":           nsCHESS + "dataLocationReduced",
+		"data_location_meta":              nsCHESS + "dataLocationMeta",
+		"data_location_scratch":           nsCHESS + "dataLocationScratch",
 	}
 
 	for field, pred := range scalarMap {
@@ -118,23 +126,23 @@ func RecordToTriples(rec Record, graphIRI string) ([]store.Triple, error) {
 
 	// Array fields — one triple per element
 	arrayMap := map[string]string{
-		"beamline":                nsCHESS + "beamline",
+		"beamline":                 nsCHESS + "beamline",
 		"beamline_funding_partner": nsCHESS + "fundingPartner",
-		"cesr_conditions":         nsCHESS + "cesrConditions",
-		"detectors":               nsCHESS + "detector",
-		"experiment_type":         nsCHESS + "experimentType",
-		"focusing":                nsCHESS + "focusing",
-		"furnace":                 nsCHESS + "furnace",
-		"insertion_device":        nsCHESS + "insertionDevice",
-		"mechanical_grips":        nsCHESS + "mechanicalGrips",
-		"mechanical_load_frame":   nsCHESS + "mechanicalLoadFrame",
-		"mechanical_test_type":    nsCHESS + "mechanicalTestType",
-		"monochromator":           nsCHESS + "monochromator",
-		"processing_environment":  nsCHESS + "processingEnvironment",
-		"staff_scientist":         nsCHESS + "staffScientist",
-		"supplementary_technique": nsCHESS + "supplementaryTechnique",
-		"technique":               nsCHESS + "technique",
-		"sample_state":            nsCHESS + "sampleState",
+		"cesr_conditions":          nsCHESS + "cesrConditions",
+		"detectors":                nsCHESS + "detector",
+		"experiment_type":          nsCHESS + "experimentType",
+		"focusing":                 nsCHESS + "focusing",
+		"furnace":                  nsCHESS + "furnace",
+		"insertion_device":         nsCHESS + "insertionDevice",
+		"mechanical_grips":         nsCHESS + "mechanicalGrips",
+		"mechanical_load_frame":    nsCHESS + "mechanicalLoadFrame",
+		"mechanical_test_type":     nsCHESS + "mechanicalTestType",
+		"monochromator":            nsCHESS + "monochromator",
+		"processing_environment":   nsCHESS + "processingEnvironment",
+		"staff_scientist":          nsCHESS + "staffScientist",
+		"supplementary_technique":  nsCHESS + "supplementaryTechnique",
+		"technique":                nsCHESS + "technique",
+		"sample_state":             nsCHESS + "sampleState",
 	}
 	for field, pred := range arrayMap {
 		arr, ok := rec[field].([]any)
@@ -177,19 +185,27 @@ func RecordToTriples(rec Record, graphIRI string) ([]store.Triple, error) {
 }
 
 // GraphIRIFromDID derives the named-graph IRI from a raw FOXDEN DID string.
+// graphIRIBase is the configurable prefix (from DataServiceConfig.GraphIRIBase);
+// pass "" to use the default "http://chess.cornell.edu/".
+//
 // DID format: /beamline=3a/btr=test-123-a/cycle=2026-1/sample_name=PAT-...
 // IRI format:  http://chess.cornell.edu/graph/3a/btr=test-123-a/cycle=2026-1/sample_name=PAT-...
-func GraphIRIFromDID(did string) string {
+func GraphIRIFromDID(did, graphIRIBase string) string {
+	if graphIRIBase == "" {
+		graphIRIBase = defaultChessBase
+	}
+	base := strings.TrimSuffix(graphIRIBase, "/")
+
 	trimmed := strings.TrimPrefix(did, "/")
 	parts := strings.SplitN(trimmed, "/", 2) // ["beamline=3a", "btr=.../.../..."]
 	if len(parts) < 2 {
 		// Malformed DID — fall back to a UUID-keyed graph
-		return chessBase + "graph/unknown/" + uuid.NewString()
+		return base + "/graph/unknown/" + uuid.NewString()
 	}
 	// Extract beamline value from first segment
 	bl := ""
 	if idx := strings.IndexByte(parts[0], '='); idx >= 0 {
 		bl = strings.ToLower(parts[0][idx+1:])
 	}
-	return fmt.Sprintf("%sgraph/%s/%s", chessBase, bl, parts[1])
+	return fmt.Sprintf("%s/graph/%s/%s", base, bl, parts[1])
 }

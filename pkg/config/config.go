@@ -132,6 +132,20 @@ type DataServiceConfig struct {
 	// OxigraphTimeout is the HTTP client timeout in seconds for Oxigraph
 	// requests (default: 30).
 	OxigraphTimeout int `yaml:"oxigraph_timeout" json:"oxigraph_timeout"`
+
+	// GraphIRIBase is the base IRI prefix used when constructing named-graph
+	// IRIs for datasets in the triple store.
+	// Named graphs are formed as: <GraphIRIBase>graph/<beamline>/<did-segments>
+	// Default: "http://chess.cornell.edu/"
+	// Must end with a trailing slash.
+	GraphIRIBase string `yaml:"graph_iri_base" json:"graph_iri_base"`
+
+	// DatasetIRIBase is the base IRI prefix used when constructing the subject
+	// IRI for dataset resources ingested from FOXDEN records.
+	// Dataset subjects are formed as: <DatasetIRIBase>dataset<did>
+	// Default: "http://chess.cornell.edu/"
+	// Must end with a trailing slash.
+	DatasetIRIBase string `yaml:"dataset_iri_base" json:"dataset_iri_base"`
 }
 
 // ──────────────────────────────────────────────────────────────────────────────
@@ -292,6 +306,8 @@ func defaults() *Config {
 			SPARQLResultLimit: 100,
 			StoreType:         "memory",
 			OxigraphTimeout:   30,
+			GraphIRIBase:      "http://chess.cornell.edu/",
+			DatasetIRIBase:    "http://chess.cornell.edu/",
 		},
 		Identity: IdentityConfig{
 			Port: 8783,

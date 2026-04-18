@@ -28,16 +28,24 @@ type NamedGraph struct {
 // MemoryStore is the in-memory GraphStore implementation.
 // It satisfies the GraphStore interface.
 type MemoryStore struct {
-	mu     sync.RWMutex
-	graphs map[string]*NamedGraph // key: graph IRI
+	mu           sync.RWMutex
+	graphs       map[string]*NamedGraph // key: graph IRI
+	graphIRIBase string                 // e.g. "http://chess.cornell.edu/"
 }
 
 // Verify interface compliance at compile time.
 var _ GraphStore = (*MemoryStore)(nil)
 
-// NewMemoryStore creates a MemoryStore pre-seeded with representative CHESS data.
-func NewMemoryStore() *MemoryStore {
-	s := &MemoryStore{graphs: make(map[string]*NamedGraph)}
+// NewMemoryStoreWithBase creates a MemoryStore using base as the graph IRI prefix.
+// base must end with a trailing slash (e.g. "http://chess.cornell.edu/").
+func NewMemoryStoreWithBase(base string) *MemoryStore {
+	if base == "" {
+		base = "http://chess.cornell.edu"
+	}
+	s := &MemoryStore{
+		graphs:       make(map[string]*NamedGraph),
+		graphIRIBase: strings.TrimSuffix(base, "/"),
+	}
 	s.seed()
 	return s
 }
@@ -72,7 +80,7 @@ func (s *MemoryStore) QueryBeamline(bl model.BeamlineID, subject, predicate, obj
 	if !bl.Valid() {
 		return nil, fmt.Errorf("store: invalid beamline id %q", bl)
 	}
-	prefix := fmt.Sprintf("http://chess.cornell.edu/graph/%s/", strings.ToLower(string(bl)))
+	prefix := fmt.Sprintf("%s/graph/%s/", s.graphIRIBase, strings.ToLower(string(bl)))
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 	var out []Triple
@@ -92,7 +100,7 @@ func (s *MemoryStore) QueryBeamline(bl model.BeamlineID, subject, predicate, obj
 }
 
 func (s *MemoryStore) DatasetsForBeamline(bl model.BeamlineID) []string {
-	prefix := fmt.Sprintf("http://chess.cornell.edu/graph/%s/", strings.ToLower(string(bl)))
+	prefix := fmt.Sprintf("%s/graph/%s/", s.graphIRIBase, strings.ToLower(string(bl)))
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 	var out []string
@@ -239,7 +247,7 @@ func (s *MemoryStore) seed() {
 	}
 
 	seedObs := []struct {
-		beamline, btr, cycle, sampleName string
+		beamline, btr, cycle, sampleName  string
 		sensorID, propLabel, result, unit string
 		runNum, daysAgo                   int
 	}{

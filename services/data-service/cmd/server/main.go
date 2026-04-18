@@ -48,7 +48,9 @@ func main() {
 			token,
 			cfg.Foxden.Timeout,
 		),
-		Store: db,
+		Store:          db,
+		GraphIRIBase:   cfg.DataService.GraphIRIBase,
+		DatasetIRIBase: cfg.DataService.DatasetIRIBase,
 	}
 
 	r := chi.NewRouter()
@@ -68,7 +70,7 @@ func main() {
 		r.Get("/graphs", handlers.BeamlineGraphs(db))
 		r.Get("/foxden/datasets", handlers.FoxdenDatasets(foxdenCfg))
 
-		r.Route("/datasets/{did}", func(r chi.Router) {
+		r.Route("/datasets/{did:.*}", func(r chi.Router) {
 			r.Get("/sparql", handlers.DatasetSPARQL(db))
 			r.Post("/triples", handlers.Triples(db))
 			r.Post("/validate", handlers.Validate(db))

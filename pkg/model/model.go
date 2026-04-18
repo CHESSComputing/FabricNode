@@ -76,13 +76,27 @@ func (d DatasetDID) BeamlineSegment() (BeamlineID, error) {
 }
 
 // GraphIRI converts a DatasetDID to the named-graph IRI used in the
-// triple store.  The beamline name is normalised to lower-case.
+// triple store using the default CHESS base URL.
+// For a configurable base, use GraphIRIWithBase.
 //
 // Example:
 //
 //	/beamline=id3a/btr=val123/cycle=2024-3/sample_name=bla
 //	→ http://chess.cornell.edu/graph/id3a/btr=val123/cycle=2024-3/sample_name=bla
 func (d DatasetDID) GraphIRI() string {
+	return d.GraphIRIWithBase("http://chess.cornell.edu/")
+}
+
+// GraphIRIWithBase converts a DatasetDID to a named-graph IRI using the
+// provided base URL (e.g. from DataServiceConfig.GraphIRIBase).
+// base must end with a trailing slash.
+//
+// Example:
+//
+//	base  = "http://chess.cornell.edu/"
+//	DID   = /beamline=id3a/btr=val123/cycle=2024-3/sample_name=bla
+//	→ http://chess.cornell.edu/graph/id3a/btr=val123/cycle=2024-3/sample_name=bla
+func (d DatasetDID) GraphIRIWithBase(base string) string {
 	trimmed := strings.TrimPrefix(string(d), "/")
 	// strip leading "beamline=<id>/" prefix to avoid redundancy in the IRI
 	rest := trimmed
@@ -90,7 +104,8 @@ func (d DatasetDID) GraphIRI() string {
 		rest = trimmed[idx+1:]
 	}
 	bl, _ := d.BeamlineSegment()
-	return fmt.Sprintf("http://chess.cornell.edu/graph/%s/%s",
+	return fmt.Sprintf("%s/graph/%s/%s",
+		strings.TrimSuffix(base, "/"),
 		strings.ToLower(string(bl)), rest)
 }
 
@@ -105,8 +120,11 @@ type DatasetRef struct {
 	DID      DatasetDID `json:"did"`
 }
 
-// GraphIRI delegates to DID.GraphIRI.
+// GraphIRI delegates to DID.GraphIRI using the default base.
 func (r DatasetRef) GraphIRI() string { return r.DID.GraphIRI() }
+
+// GraphIRIWithBase delegates to DID.GraphIRIWithBase.
+func (r DatasetRef) GraphIRIWithBase(base string) string { return r.DID.GraphIRIWithBase(base) }
 
 // Validate returns an error if either field is empty or malformed.
 func (r DatasetRef) Validate() error {

@@ -14,8 +14,10 @@ import (
 
 // FoxdenConfig holds the runtime dependencies for FOXDEN-backed handlers.
 type FoxdenConfig struct {
-	Client *foxden.Client
-	Store  store.GraphStore
+	Client         *foxden.Client
+	Store          store.GraphStore
+	GraphIRIBase   string // e.g. "http://chess.cornell.edu/" — prefix for named-graph IRIs
+	DatasetIRIBase string // e.g. "http://chess.cornell.edu/" — prefix for dataset subject IRIs
 }
 
 // FoxdenDatasets lists FOXDEN metadata records for a beamline and returns
@@ -123,10 +125,10 @@ func FoxdenIngest(cfg FoxdenConfig) http.HandlerFunc {
 		}
 
 		rec := foxden.Record(resp.Results.Records[0])
-		graphIRI := foxden.GraphIRIFromDID(did)
+		graphIRI := foxden.GraphIRIFromDID(did, cfg.GraphIRIBase)
 
 		// 2. Convert to RDF triples
-		triples, err := foxden.RecordToTriples(rec, graphIRI)
+		triples, err := foxden.RecordToTriples(rec, graphIRI, cfg.DatasetIRIBase)
 		if err != nil {
 			http.Error(w, "rdf conversion failed: "+err.Error(), http.StatusInternalServerError)
 			return
