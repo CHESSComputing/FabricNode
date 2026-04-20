@@ -270,7 +270,7 @@ func Load(path string) (*Config, error) {
 				return nil, fmt.Errorf("config: parse YAML %q: %w", resolved, err)
 			}
 		}
-		cfg.ApplyEnv()
+		//cfg.ApplyEnv()
 	}
 	return cfg, nil
 }
