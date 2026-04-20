@@ -127,8 +127,14 @@ type DidResponse struct {
 // helper function to get dids from FOXDEN
 func getDids(cfg *fabricconfig.Config, bl string) ([]string, error) {
 	var dids []string
-	spec := make(map[string]string)
-	spec["beamline"] = bl
+	// FOXDEN stores beamline as an array field (e.g. ["7A"]), so we must send
+	// the query value as an array too.  We include both the original case and
+	// upper-case to handle any inconsistency in how beamline IDs are recorded.
+	blLower := strings.ToLower(bl)
+	blUpper := strings.ToUpper(bl)
+	spec := map[string]any{
+		"beamline": []string{blLower, blUpper},
+	}
 	data, err := json.Marshal(spec)
 	if err != nil {
 		return dids, err
@@ -156,9 +162,10 @@ func getDids(cfg *fabricconfig.Config, bl string) ([]string, error) {
 	if err != nil {
 		return dids, err
 	}
+	// Case-insensitive match: DID contains /beamline=<id>/ in any case
+	pat := fmt.Sprintf("beamline=%s", blLower)
 	for _, r := range records {
-		pat := fmt.Sprintf("beamline=%s", bl)
-		if strings.Contains(r.Did, pat) {
+		if strings.Contains(strings.ToLower(r.Did), pat) {
 			dids = append(dids, r.Did)
 		}
 	}
