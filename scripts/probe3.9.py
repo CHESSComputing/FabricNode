@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 """
-scripts/probe.py — CHESS FabricNode integration probe.
-...
+scripts/probe.py — FabricNode integration probe.
 """
 
 import os
@@ -66,6 +65,7 @@ def post(url: str, body: Any, timeout: int = 10) -> Tuple[int, Any]:
 
 
 def encode_did(did: str) -> str:
+    """Percent-encode a DID for use as a URL path segment (encodes / and =)."""
     return urllib.parse.quote(did, safe="")
 
 # ──────────────────────────────────────────────────────────────────────────────
@@ -124,8 +124,7 @@ def vprint(verbose: bool, label: str, url: Optional[str], body: Any = None):
         if lines > 30:
             print(f"    … ({lines - 30} more lines)")
 
-# (rest of your logic remains unchanged)
-# Only typing fixes were required for Python 3.9 compatibility
+
 # ──────────────────────────────────────────────────────────────────────────────
 # Step 0 — health checks
 # ──────────────────────────────────────────────────────────────────────────────
@@ -146,7 +145,6 @@ def check_health(results: Results, data_url: str, catalog_url: str, foxden_url: 
         except ConnectionError as e:
             results.fail(f"{name} reachable", str(e))
 
-    # FOXDEN health is best-effort — it may not have a /health endpoint
     try:
         code, _ = get(f"{foxden_url}/health", timeout=3)
         if code == 200:
@@ -164,7 +162,7 @@ def check_health(results: Results, data_url: str, catalog_url: str, foxden_url: 
 # Step 1 — FOXDEN search
 # ──────────────────────────────────────────────────────────────────────────────
 
-def search_foxden(results: Results, foxden_url: str, key: str, value: str, limit: int, verbose: bool) -> list[dict]:
+def search_foxden(results: Results, foxden_url: str, key: str, value: str, limit: int, verbose: bool) -> List[dict]:
     sep(f"FOXDEN search  ({key}={value!r})")
 
     payload = {
@@ -183,18 +181,6 @@ def search_foxden(results: Results, foxden_url: str, key: str, value: str, limit
     except ConnectionError as e:
         results.fail("FOXDEN /search reachable", str(e))
         return []
-
-    # ── Shape validation ──────────────────────────────────────────────────────
-    # Expected shape:
-    # {
-    #   "http_code": 200,
-    #   "status": "ok",
-    #   "error": "",
-    #   "results": {
-    #     "nrecords": <int>,
-    #     "records": [ { "did": "...", "beamline": [...], "btr": "...", ... } ]
-    #   }
-    # }
 
     if code != 200:
         results.fail(f"FOXDEN search HTTP 200", f"Got HTTP {code}: {body}")
@@ -229,7 +215,6 @@ def search_foxden(results: Results, foxden_url: str, key: str, value: str, limit
 
     results.ok(f"{nrecords} record(s) found")
 
-    # Validate first record has required fields
     rec = records[0]
     required_fields = ["did", "beamline", "btr", "cycle"]
     missing = [f for f in required_fields if f not in rec]
@@ -252,24 +237,22 @@ def search_foxden(results: Results, foxden_url: str, key: str, value: str, limit
 # Step 2 — Ingest into data-service
 # ──────────────────────────────────────────────────────────────────────────────
 
-def ingest_records(results: Results, data_url: str, records: list[dict], verbose: bool) -> list[dict]:
+def ingest_records(results: Results, data_url: str, records: List[dict], verbose: bool) -> List[dict]:
     sep("Ingest FOXDEN → data-service")
 
     # Expected response shape from POST /beamlines/{bl}/datasets/{did}/foxden/ingest:
     # {
     #   "ingested": <int>,       # number of RDF triples written
     #   "did":      "<string>",  # the dataset DID
-    #   "graphIRI": "<string>"   # http://chess.cornell.edu/graph/<bl>/...
+    #   "graphIRI": "<string>"   # <iri_base>graph/<bl>/...  (base comes from server config)
     # }
 
     ingested_ok = []
     for rec in records:
         did = rec.get("did", "")
         bl_raw = rec.get("beamline", [])
-        # beamline field is an array like ["3A"]; normalise to lower-case
         bl = bl_raw[0].lower() if isinstance(bl_raw, list) and bl_raw else ""
         if not bl:
-            # fall back to extracting from DID
             parts = did.lstrip("/").split("/")
             for part in parts:
                 if part.startswith("beamline="):
@@ -309,12 +292,15 @@ def ingest_records(results: Results, data_url: str, records: list[dict], verbose
             results.fail(label, f"ingested=0, body={body}")
             continue
 
-        # graphIRI must follow the scheme:
-        #   http://chess.cornell.edu/graph/<beamline>/<did-segments>
-        if graph_iri.startswith(f"https://chess.cornell.edu/graph/{bl}/"):
-            results.ok(f"graphIRI scheme correct")
+        # Validate graphIRI structure without assuming the IRI base.
+        # The server returns whatever iri_base is configured; we just check
+        # that the beamline and path segments are present.
+        expected_fragment = f"/graph/{bl}/"
+        if graph_iri and expected_fragment in graph_iri:
+            results.ok(f"graphIRI contains expected fragment '{expected_fragment}'")
         else:
-            results.fail(f"graphIRI has expected prefix", f"Got: {graph_iri!r}")
+            results.fail(f"graphIRI contains '{expected_fragment}'",
+                         f"Got: {graph_iri!r}")
 
         if returned_did == did:
             results.ok("Response DID matches input DID")
@@ -331,7 +317,7 @@ def ingest_records(results: Results, data_url: str, records: list[dict], verbose
 # Step 3 — SPARQL verification
 # ──────────────────────────────────────────────────────────────────────────────
 
-def verify_sparql(results: Results, data_url: str, ingested: list[dict], verbose: bool):
+def verify_sparql(results: Results, data_url: str, ingested: List[dict], verbose: bool):
     sep("SPARQL verification")
 
     # Expected SPARQL response shape:
@@ -340,10 +326,10 @@ def verify_sparql(results: Results, data_url: str, ingested: list[dict], verbose
     #   "results": {
     #     "bindings": [
     #       {
-    #         "s": { "type": "uri",     "value": "http://..." },
-    #         "p": { "type": "uri",     "value": "http://..." },
+    #         "s": { "type": "uri",     "value": "<iri_base>dataset<did>" },
+    #         "p": { "type": "uri",     "value": "..." },
     #         "o": { "type": "literal", "value": "..." },
-    #         "g": { "type": "uri",     "value": "http://chess.cornell.edu/graph/..." }
+    #         "g": { "type": "uri",     "value": "<iri_base>graph/<bl>/..." }
     #       }
     #     ]
     #   }
@@ -375,7 +361,6 @@ def verify_sparql(results: Results, data_url: str, ingested: list[dict], verbose
             results.fail(f"{label} returns JSON object", f"Got {type(body).__name__}")
             continue
 
-        # head.vars
         head_vars = body.get("head", {}).get("vars", [])
         expected_vars = {"s", "p", "o", "g"}
         if expected_vars.issubset(set(head_vars)):
@@ -390,7 +375,6 @@ def verify_sparql(results: Results, data_url: str, ingested: list[dict], verbose
             results.fail(f"Named graph contains triples", "bindings=[]")
             continue
 
-        # Spot-check first binding structure
         b = bindings[0]
         shape_ok = all(
             isinstance(b.get(v), dict) and "type" in b[v] and "value" in b[v]
@@ -401,7 +385,7 @@ def verify_sparql(results: Results, data_url: str, ingested: list[dict], verbose
         else:
             results.fail("Binding shape", f"First binding: {b}")
 
-        # Every triple must belong to the expected graph
+        # Every triple must belong to the expected graph IRI (from the ingest response).
         wrong_graph = [
             b["g"]["value"] for b in bindings
             if b.get("g", {}).get("value") != graph_iri
@@ -412,14 +396,19 @@ def verify_sparql(results: Results, data_url: str, ingested: list[dict], verbose
             results.fail("All triples in correct named graph",
                          f"{len(wrong_graph)} triple(s) have wrong graph IRI: {wrong_graph[:2]}")
 
-        # At least one triple should have the dataset IRI as subject
-        dataset_iri = f"https://chess.cornell.edu/dataset{did}"
+        # At least one triple should have the dataset DID embedded in its subject IRI.
+        # We do NOT hardcode the IRI base — instead we check that a subject
+        # contains the DID path, which works regardless of configured iri_base.
         subjects = {b["s"]["value"] for b in bindings}
-        if dataset_iri in subjects:
-            results.ok(f"Dataset IRI appears as subject: {dataset_iri[:60]}")
+        dataset_subject = next(
+            (s for s in subjects if f"dataset{did}" in s or s.endswith(did)),
+            None
+        )
+        if dataset_subject:
+            results.ok(f"Dataset IRI appears as subject: {dataset_subject[:60]}")
         else:
             results.fail("Dataset IRI appears as subject",
-                         f"Expected {dataset_iri!r}\nFound subjects: {list(subjects)[:3]}")
+                         f"No subject contains DID path\nFound subjects: {list(subjects)[:3]}")
 
         vprint(verbose, "SPARQL bindings (first 3)", None, bindings[:3])
 
@@ -443,25 +432,10 @@ def verify_sparql(results: Results, data_url: str, ingested: list[dict], verbose
 # Step 4 — catalog-service dataset listing
 # ──────────────────────────────────────────────────────────────────────────────
 
-def verify_catalog(results: Results, catalog_url: str, ingested: list[dict], verbose: bool):
+def verify_catalog(results: Results, catalog_url: str, ingested: List[dict], verbose: bool):
     sep("Catalog-service verification")
 
-    # Expected shape from GET /catalog/beamlines/{beamline}/datasets:
-    # {
-    #   "@context": { "dcat": "...", "dct": "..." },
-    #   "@id":      "http://localhost:8781/catalog/beamlines/3a",
-    #   "@type":    "dcat:Catalog",
-    #   "dcat:dataset": [
-    #     {
-    #       "@id":   "http://...",
-    #       "@type": "dcat:Dataset",
-    #       "dct:title": "...",
-    #       "dcat:distribution": { "dcat:accessURL": "http://..." }
-    #     }
-    #   ]
-    # }
-
-    seen_beamlines: set[str] = set()
+    seen_beamlines: Set[str] = set()
     for item in ingested:
         bl = item["beamline"]
         if bl in seen_beamlines:
@@ -488,7 +462,6 @@ def verify_catalog(results: Results, catalog_url: str, ingested: list[dict], ver
             results.fail(f"{label} returns JSON-LD object", f"Got {type(body).__name__}")
             continue
 
-        # Must be a dcat:Catalog
         dtype = body.get("@type", "")
         if dtype == "dcat:Catalog":
             results.ok("@type is dcat:Catalog")
@@ -502,7 +475,6 @@ def verify_catalog(results: Results, catalog_url: str, ingested: list[dict], ver
             results.fail("dcat:dataset is non-empty array", f"Got: {datasets!r}")
             continue
 
-        # Each dataset entry must have @id, @type, dcat:distribution
         first = datasets[0]
         for field in ["@id", "@type", "dct:title"]:
             if field in first:
@@ -520,7 +492,6 @@ def verify_catalog(results: Results, catalog_url: str, ingested: list[dict], ver
         vprint(verbose, "Catalog response", None, body)
 
 
-
 # ──────────────────────────────────────────────────────────────────────────────
 # Main
 # ──────────────────────────────────────────────────────────────────────────────
@@ -529,7 +500,6 @@ def main():
     parser = argparse.ArgumentParser(
         description="FabricNode integration probe — traces FOXDEN → data-service → SPARQL data flow",
         formatter_class=argparse.RawDescriptionHelpFormatter,
-        epilog=__doc__.split("Usage:")[1] if "Usage:" in __doc__ else "",
     )
     parser.add_argument("--key",     required=True,  help="FOXDEN field to search on (e.g. btr, cycle, beamline)")
     parser.add_argument("--value",   required=True,  help="Value to match")
@@ -552,10 +522,8 @@ def main():
 
     results = Results()
 
-    # Step 0 — health
     check_health(results, args.data, args.catalog, args.foxden, args.dry_run)
 
-    # Step 1 — FOXDEN search
     records = search_foxden(results, args.foxden, args.key, args.value, args.limit, args.verbose)
     if not records:
         print(f"\n{red('No records returned from FOXDEN — stopping.')}")
@@ -566,21 +534,18 @@ def main():
         results.summary()
         sys.exit(results.exit_code)
 
-    # Step 2 — ingest
     ingested = ingest_records(results, args.data, records, args.verbose)
     if not ingested:
         print(f"\n{red('No records ingested successfully — skipping SPARQL and catalog steps.')}")
         results.summary()
         sys.exit(results.exit_code)
 
-    # Step 3 — SPARQL verification
     verify_sparql(results, args.data, ingested, args.verbose)
-
-    # Step 4 — catalog verification
     verify_catalog(results, args.catalog, ingested, args.verbose)
 
     results.summary()
     sys.exit(results.exit_code)
+
 
 if __name__ == "__main__":
     main()
