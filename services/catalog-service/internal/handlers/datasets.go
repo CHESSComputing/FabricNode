@@ -131,9 +131,10 @@ func getDids(cfg *fabricconfig.Config, bl string) ([]string, error) {
 	// the query value as an array too.  We include both the original case and
 	// upper-case to handle any inconsistency in how beamline IDs are recorded.
 	blLower := strings.ToLower(bl)
-	blUpper := strings.ToUpper(bl)
+	//blUpper := strings.ToUpper(bl)
 	spec := map[string]any{
-		"beamline": []string{blLower, blUpper},
+		//"beamline": []string{blLower, blUpper},
+		"beamline": blLower,
 	}
 	data, err := json.Marshal(spec)
 	if err != nil {
