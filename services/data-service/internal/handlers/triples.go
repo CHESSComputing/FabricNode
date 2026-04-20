@@ -11,6 +11,13 @@ import (
 	"github.com/go-chi/chi/v5"
 )
 
+// StoreConfig bundles the graph store and the node-wide IRI base needed by
+// write handlers (triples insertion, SHACL validation).
+type StoreConfig struct {
+	Store   store.GraphStore
+	IRIBase string // from Config.Node.IRIBase, e.g. "http://chess.cornell.edu/"
+}
+
 // Triples handles SHACL-validated triple insertion scoped to a dataset.
 //
 //	POST /beamlines/{beamline}/datasets/{did}/triples
@@ -21,7 +28,7 @@ import (
 // Body: JSON array of store.Triple objects.  The Graph field of each triple is
 // overwritten by the canonical named-graph IRI derived from the DID, so callers
 // do not need to set it.
-func Triples(db store.GraphStore) http.HandlerFunc {
+func Triples(cfg StoreConfig) http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
 		ref, ok := datasetRefFromPath(w, req)
 		if !ok {
@@ -35,7 +42,7 @@ func Triples(db store.GraphStore) http.HandlerFunc {
 		}
 
 		// SHACL validation scoped to beamline (checks sensor ownership)
-		result := shacl.ValidateForDataset(ref, triples)
+		result := shacl.ValidateForDataset(ref, triples, cfg.IRIBase)
 		if !result.Conforms {
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusUnprocessableEntity)
@@ -46,7 +53,7 @@ func Triples(db store.GraphStore) http.HandlerFunc {
 			return
 		}
 
-		if err := db.InsertForDataset(ref, triples); err != nil {
+		if err := cfg.Store.InsertForDataset(ref, triples); err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
@@ -54,11 +61,11 @@ func Triples(db store.GraphStore) http.HandlerFunc {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusCreated)
 		json.NewEncoder(w).Encode(map[string]any{
-			"inserted":  len(triples),
-			"conforms":  true,
-			"beamline":  ref.Beamline,
-			"did":       ref.DID,
-			"graphIRI":  ref.GraphIRI(),
+			"inserted": len(triples),
+			"conforms": true,
+			"beamline": ref.Beamline,
+			"did":      ref.DID,
+			"graphIRI": ref.GraphIRIWithBase(cfg.IRIBase),
 		})
 	}
 }
@@ -66,7 +73,7 @@ func Triples(db store.GraphStore) http.HandlerFunc {
 // Validate handles dry-run SHACL validation without inserting triples.
 //
 //	POST /beamlines/{beamline}/datasets/{did}/validate
-func Validate(db store.GraphStore) http.HandlerFunc {
+func Validate(cfg StoreConfig) http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
 		ref, ok := datasetRefFromPath(w, req)
 		if !ok {
@@ -79,7 +86,7 @@ func Validate(db store.GraphStore) http.HandlerFunc {
 			return
 		}
 
-		result := shacl.ValidateForDataset(ref, triples)
+		result := shacl.ValidateForDataset(ref, triples, cfg.IRIBase)
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(result)
 	}

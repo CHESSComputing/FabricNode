@@ -33,7 +33,7 @@ type OxigraphStore struct {
 	queryURL     string // e.g. "http://localhost:7878/query"
 	updateURL    string // e.g. "http://localhost:7878/update"
 	client       *http.Client
-	graphIRIBase string // e.g. "http://chess.cornell.edu/"
+	graphIRIBase string // e.g. "http://example.org/" — from Config.Node.IRIBase
 }
 
 // Verify interface compliance at compile time.
@@ -41,13 +41,11 @@ var _ GraphStore = (*OxigraphStore)(nil)
 
 // NewOxigraphStoreWithBase creates an OxigraphStore with a configurable graph
 // IRI base prefix (e.g. from DataServiceConfig.GraphIRIBase).
-// graphIRIBase must end with a trailing slash.
+// graphIRIBase must be non-empty and end with a trailing slash (e.g. "http://example.org/").
+// Callers must pass cfg.Node.IRIBase — an empty value will produce malformed IRIs.
 func NewOxigraphStoreWithBase(baseURL, graphIRIBase string, timeout time.Duration) *OxigraphStore {
 	if timeout == 0 {
 		timeout = 30 * time.Second
-	}
-	if graphIRIBase == "" {
-		graphIRIBase = "http://chess.cornell.edu"
 	}
 	base := strings.TrimRight(baseURL, "/")
 	return &OxigraphStore{
@@ -68,7 +66,7 @@ func (s *OxigraphStore) InsertForDataset(ref model.DatasetRef, triples []Triple)
 	if err := ref.Validate(); err != nil {
 		return fmt.Errorf("oxigraph: invalid dataset ref: %w", err)
 	}
-	graphIRI := ref.GraphIRI()
+	graphIRI := ref.GraphIRIWithBase(s.graphIRIBase + "/")
 	for i := range triples {
 		triples[i].Graph = graphIRI
 	}
@@ -84,7 +82,7 @@ func (s *OxigraphStore) QueryDataset(ref model.DatasetRef, subject, predicate, o
 	if err := ref.Validate(); err != nil {
 		return nil, fmt.Errorf("oxigraph: invalid dataset ref: %w", err)
 	}
-	return s.runSelectTriples(subject, predicate, object, ref.GraphIRI())
+	return s.runSelectTriples(subject, predicate, object, ref.GraphIRIWithBase(s.graphIRIBase+"/"))
 }
 
 // QueryBeamline returns triples from every named graph that belongs to bl.

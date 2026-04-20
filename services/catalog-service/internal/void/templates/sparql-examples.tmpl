@@ -3,7 +3,7 @@
 @prefix rdfs:  <http://www.w3.org/2000/01/rdf-schema#> .
 @prefix schema: <https://schema.org/> .
 @prefix sosa:  <http://www.w3.org/ns/sosa/> .
-@prefix chess: <http://chess.cornell.edu/ns#> .
+@prefix chess: <{{.ChessNS}}> .
 
 # ── Example 1: list all beamlines ────────────────────────────────────────────
 <{{.BaseURL}}/sparql-examples/list-beamlines>
@@ -12,7 +12,7 @@
     schema:description "Returns the IRI and label of every beamline registered at this node." ;
     spex:query """
 PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
-PREFIX chess: <http://chess.cornell.edu/ns#>
+PREFIX chess: <{{.ChessNS}}>
 
 SELECT ?beamline ?label ?type WHERE {
     ?beamline a chess:Beamline ;
@@ -30,11 +30,11 @@ ORDER BY ?label
     spex:query """
 PREFIX sosa: <http://www.w3.org/ns/sosa/>
 PREFIX xsd:  <http://www.w3.org/2001/XMLSchema#>
-PREFIX chess: <http://chess.cornell.edu/ns#>
+PREFIX chess: <{{.ChessNS}}>
 
 SELECT ?obs ?resultTime ?result WHERE {
     ?obs a sosa:Observation ;
-         sosa:madeBySensor <http://chess.cornell.edu/sensor/id1-detector-01> ;
+         sosa:madeBySensor ?sensor ;
          sosa:resultTime ?resultTime .
     OPTIONAL { ?obs sosa:hasSimpleResult ?result . }
 }

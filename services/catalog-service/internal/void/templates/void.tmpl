@@ -2,19 +2,13 @@
 @prefix dct:  <http://purl.org/dc/terms/> .
 @prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
 @prefix xsd:  <http://www.w3.org/2001/XMLSchema#> .
-@prefix chess: <https://chess.cornell.edu/ns#> .
-
-@prefix dcat: <http://www.w3.org/ns/dcat#> .
-@prefix dct:  <http://purl.org/dc/terms/> .
-@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
-@prefix xsd:  <http://www.w3.org/2001/XMLSchema#> .
-@prefix chess: <https://chess.cornell.edu/ns#> .
+@prefix chess: <{{.ChessNS}}> .
 
 <{{.BaseURL}}/catalog>
     a dcat:Catalog ;
     rdfs:label "{{.NodeName}}" ;
-    dct:description "Federated knowledge fabric node for CHESS synchrotron beamline data." ;
-    dct:publisher <https://chess.cornell.edu/> ;
+    dct:description "Federated knowledge fabric node." ;
+    dct:publisher <{{.IRIBase}}> ;
     dct:license <https://creativecommons.org/licenses/by/4.0/> ;
     dct:conformsTo <https://w3id.org/cogitarelink/fabric#CoreProfile> ;
     dcat:service <{{.BaseURL}}/sparql> ;

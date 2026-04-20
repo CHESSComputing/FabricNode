@@ -24,7 +24,7 @@ func Beamlines(cfg *fabricconfig.Config, beamlines []fabricconfig.BeamlineConfig
 			"@context": map[string]string{
 				"dcat":  "http://www.w3.org/ns/dcat#",
 				"dct":   "http://purl.org/dc/terms/",
-				"chess": "http://chess.cornell.edu/ns#",
+				"chess": cfg.Node.ChessNS(),
 			},
 			"@id":          fmt.Sprintf("%s/catalog", cfg.Node.BaseURL),
 			"@type":        "dcat:Catalog",

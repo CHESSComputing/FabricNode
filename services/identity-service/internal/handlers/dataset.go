@@ -29,8 +29,8 @@ type DatasetPublicationRequest struct {
 	DOIUrl string `json:"doi_url"`
 
 	// GraphIRI overrides the derived named-graph IRI.
-	// If empty it is derived from DID using the standard scheme:
-	//   http://chess.cornell.edu/graph/<beamline>/<did-segments>
+	// If empty it is derived from DID using the node's configured IRIBase:
+	//   <IRIBase>graph/<beamline>/<did-segments>
 	GraphIRI string `json:"graph_iri,omitempty"`
 
 	// SPARQLEndpoint overrides the derived query URL.
@@ -81,7 +81,7 @@ func IssueDatasetCredential(s *NodeState) http.HandlerFunc {
 		// ── Derive optional fields ────────────────────────────────────────────
 		graphIRI := r.GraphIRI
 		if graphIRI == "" {
-			graphIRI = graphIRIFromDID(r.DID)
+			graphIRI = graphIRIFromDID(s, r.DID)
 		}
 
 		sparqlEndpoint := r.SPARQLEndpoint
@@ -168,19 +168,21 @@ func VerifyDatasetCredential(s *NodeState) http.HandlerFunc {
 // URL derivation helpers
 // ──────────────────────────────────────────────────────────────────────────────
 
-// graphIRIFromDID derives the named-graph IRI from a dataset DID.
-// /beamline=3a/btr=test-123-a/... → http://chess.cornell.edu/graph/3a/btr=test-123-a/...
-func graphIRIFromDID(did string) string {
+// graphIRIFromDID derives the named-graph IRI from a dataset DID using the
+// node's configured IRIBase.
+// /beamline=3a/btr=test-123-a/... → <IRIBase>graph/3a/btr=test-123-a/...
+func graphIRIFromDID(s *NodeState, did string) string {
+	base := strings.TrimSuffix(s.IRIBase, "/")
 	trimmed := strings.TrimPrefix(did, "/")
 	parts := strings.SplitN(trimmed, "/", 2)
 	if len(parts) < 2 {
-		return fmt.Sprintf("http://chess.cornell.edu/graph/unknown/%s", trimmed)
+		return fmt.Sprintf("%s/graph/unknown/%s", base, trimmed)
 	}
 	bl := ""
 	if idx := strings.IndexByte(parts[0], '='); idx >= 0 {
 		bl = strings.ToLower(parts[0][idx+1:])
 	}
-	return fmt.Sprintf("http://chess.cornell.edu/graph/%s/%s", bl, parts[1])
+	return fmt.Sprintf("%s/graph/%s/%s", base, bl, parts[1])
 }
 
 // sparqlEndpointFromDID builds the data-service SPARQL URL for a dataset.

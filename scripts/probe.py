@@ -260,7 +260,7 @@ def ingest_records(results: Results, data_url: str, records: list[dict], verbose
     # {
     #   "ingested": <int>,       # number of RDF triples written
     #   "did":      "<string>",  # the dataset DID
-    #   "graphIRI": "<string>"   # http://chess.cornell.edu/graph/<bl>/...
+    #   "graphIRI": "<string>"   # https://chess.cornell.edu/graph/<bl>/...
     # }
 
     ingested_ok = []
@@ -311,8 +311,8 @@ def ingest_records(results: Results, data_url: str, records: list[dict], verbose
             continue
 
         # graphIRI must follow the scheme:
-        #   http://chess.cornell.edu/graph/<beamline>/<did-segments>
-        if graph_iri.startswith(f"http://chess.cornell.edu/graph/{bl}/"):
+        #   https://chess.cornell.edu/graph/<beamline>/<did-segments>
+        if graph_iri.startswith(f"https://chess.cornell.edu/graph/{bl}/"):
             results.ok(f"graphIRI scheme correct")
         else:
             results.fail(f"graphIRI has expected prefix", f"Got: {graph_iri!r}")
@@ -414,7 +414,7 @@ def verify_sparql(results: Results, data_url: str, ingested: list[dict], verbose
                          f"{len(wrong_graph)} triple(s) have wrong graph IRI: {wrong_graph[:2]}")
 
         # At least one triple should have the dataset IRI as subject
-        dataset_iri = f"http://chess.cornell.edu/dataset{did}"
+        dataset_iri = f"https://chess.cornell.edu/dataset{did}"
         subjects = {b["s"]["value"] for b in bindings}
         if dataset_iri in subjects:
             results.ok(f"Dataset IRI appears as subject: {dataset_iri[:60]}")

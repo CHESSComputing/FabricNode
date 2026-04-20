@@ -75,27 +75,15 @@ func (d DatasetDID) BeamlineSegment() (BeamlineID, error) {
 	return BeamlineID(segs[0][1]), nil
 }
 
-// GraphIRI converts a DatasetDID to the named-graph IRI used in the
-// triple store using the default CHESS base URL.
-// For a configurable base, use GraphIRIWithBase.
-//
-// Example:
-//
-//	/beamline=id3a/btr=val123/cycle=2024-3/sample_name=bla
-//	→ http://chess.cornell.edu/graph/id3a/btr=val123/cycle=2024-3/sample_name=bla
-func (d DatasetDID) GraphIRI() string {
-	return d.GraphIRIWithBase("http://chess.cornell.edu/")
-}
-
 // GraphIRIWithBase converts a DatasetDID to a named-graph IRI using the
-// provided base URL (e.g. from DataServiceConfig.GraphIRIBase).
+// provided base URL (e.g. from Config.Node.IRIBase).
 // base must end with a trailing slash.
 //
 // Example:
 //
-//	base  = "http://chess.cornell.edu/"
+//	base  = "http://example.org/"
 //	DID   = /beamline=id3a/btr=val123/cycle=2024-3/sample_name=bla
-//	→ http://chess.cornell.edu/graph/id3a/btr=val123/cycle=2024-3/sample_name=bla
+//	→ http://example.org/graph/id3a/btr=val123/cycle=2024-3/sample_name=bla
 func (d DatasetDID) GraphIRIWithBase(base string) string {
 	trimmed := strings.TrimPrefix(string(d), "/")
 	// strip leading "beamline=<id>/" prefix to avoid redundancy in the IRI
@@ -119,9 +107,6 @@ type DatasetRef struct {
 	Beamline BeamlineID `json:"beamline"`
 	DID      DatasetDID `json:"did"`
 }
-
-// GraphIRI delegates to DID.GraphIRI using the default base.
-func (r DatasetRef) GraphIRI() string { return r.DID.GraphIRI() }
 
 // GraphIRIWithBase delegates to DID.GraphIRIWithBase.
 func (r DatasetRef) GraphIRIWithBase(base string) string { return r.DID.GraphIRIWithBase(base) }

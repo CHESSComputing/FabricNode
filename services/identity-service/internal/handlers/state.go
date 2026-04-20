@@ -8,13 +8,14 @@ import (
 	"github.com/CHESSComputing/FabricNode/services/identity-service/internal/vc"
 )
 
-// NodeState holds the keying material and pre-issued conformance credential
-// generated at startup. Passed to every handler constructor.
+// NodeState holds the keying material, pre-issued conformance credential,
+// and node-wide IRI base generated at startup. Passed to every handler constructor.
 type NodeState struct {
 	KeyID     string
 	KeyPair   *did.KeyPair
 	DIDDoc    *did.Document
 	ConformVC *vc.FabricConformanceCredential
+	IRIBase   string // from Config.Node.IRIBase, e.g. "http://chess.cornell.edu/"
 }
 
 // writeJSON writes a JSON-encoded value with the given HTTP status code.

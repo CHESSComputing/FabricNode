@@ -30,13 +30,15 @@ import (
 // Top-level config struct
 // ──────────────────────────────────────────────────────────────────────────────
 
+// TLSConfig holds optional TLS certificate and key paths.
 type TLSConfig struct {
-	ServerKey  string `yaml:"server_key" json:"server_key"`
-	ServerCert string `yaml:"server_cert" jaon:"server_key"`
+	ServerKey  string `yaml:"server_key"  json:"server_key"`
+	ServerCert string `yaml:"server_cert" json:"server_cert"`
 }
 
 // Config is the root configuration document.
-// Every section is optional; missing sections fall back to safe defaults.
+// Every section is optional; missing sections fall back to safe defaults,
+// except for Node.IRIBase which is mandatory (see Validate).
 type Config struct {
 	Node         NodeConfig         `yaml:"node"         json:"node"`
 	Catalog      CatalogConfig      `yaml:"catalog"      json:"catalog"`
@@ -44,7 +46,7 @@ type Config struct {
 	Identity     IdentityConfig     `yaml:"identity"     json:"identity"`
 	Notification NotificationConfig `yaml:"notification" json:"notification"`
 	Foxden       FoxdenConfig       `yaml:"foxden"       json:"foxden"`
-	TSLConfig    TLSConfig          `yaml:"tls" json:"tls"`
+	TSLConfig    TLSConfig          `yaml:"tls"          json:"tls"`
 }
 
 // ──────────────────────────────────────────────────────────────────────────────
@@ -67,6 +69,23 @@ type NodeConfig struct {
 	// catalog-service.  Defaults to "http://localhost:8782".
 	// Can be overridden with the DATA_SERVICE_URL environment variable.
 	DataServiceURL string `yaml:"data_service_url" json:"data_service_url"`
+
+	// IRIBase is the base IRI prefix used throughout the node for:
+	//   - named-graph IRIs:     <IRIBase>graph/<beamline>/<did-segments>
+	//   - dataset subject IRIs: <IRIBase>dataset<did>
+	//   - RDF namespace prefix: <IRIBase>ns#  (the "chess:" prefix in Turtle/SPARQL)
+	//   - sensor IRIs:          <IRIBase>sensor/<id>
+	//
+	// Must end with a trailing slash, e.g. "http://chess.cornell.edu/".
+	// This field is MANDATORY — Validate() returns an error if it is empty.
+	// Can be overridden with the NODE_IRI_BASE environment variable.
+	IRIBase string `yaml:"iri_base" json:"iri_base"`
+}
+
+// ChessNS returns the RDF namespace IRI derived from IRIBase, i.e. IRIBase + "ns#".
+// Example: "http://chess.cornell.edu/" → "http://chess.cornell.edu/ns#"
+func (n NodeConfig) ChessNS() string {
+	return strings.TrimSuffix(n.IRIBase, "/") + "/ns#"
 }
 
 // ──────────────────────────────────────────────────────────────────────────────
@@ -79,11 +98,10 @@ type CatalogConfig struct {
 	Port int `yaml:"port" json:"port"`
 
 	// Beamlines is the registry of beamlines served by this node.
-	// These replace the hard-coded knownBeamlines slice in datasets.go.
 	Beamlines []BeamlineConfig `yaml:"beamlines" json:"beamlines"`
 }
 
-// BeamlineConfig describes one CHESS beamline.
+// BeamlineConfig describes one beamline served by this node.
 type BeamlineConfig struct {
 	// ID is the canonical lower-case beamline identifier, e.g. "id1", "3a", "fast".
 	// Must match the beamline= segment used in dataset DIDs.
@@ -101,10 +119,10 @@ type BeamlineConfig struct {
 	// Description is an optional long-form description.
 	Description string `yaml:"description,omitempty" json:"description,omitempty"`
 
-	// Alias is alias for beamline
+	// Alias is an optional alias for the beamline.
 	Alias string `yaml:"alias,omitempty" json:"alias,omitempty"`
 
-	// Partners is a list of partners
+	// Partners is an optional list of partner identifiers.
 	Partners []string `yaml:"partners,omitempty" json:"partners,omitempty"`
 }
 
@@ -113,6 +131,8 @@ type BeamlineConfig struct {
 // ──────────────────────────────────────────────────────────────────────────────
 
 // DataServiceConfig configures the data-service.
+// Named-graph and dataset IRI prefixes are derived from Node.IRIBase rather
+// than being duplicated here.
 type DataServiceConfig struct {
 	// Port the data-service listens on (default: 8782).
 	Port int `yaml:"port" json:"port"`
@@ -132,20 +152,6 @@ type DataServiceConfig struct {
 	// OxigraphTimeout is the HTTP client timeout in seconds for Oxigraph
 	// requests (default: 30).
 	OxigraphTimeout int `yaml:"oxigraph_timeout" json:"oxigraph_timeout"`
-
-	// GraphIRIBase is the base IRI prefix used when constructing named-graph
-	// IRIs for datasets in the triple store.
-	// Named graphs are formed as: <GraphIRIBase>graph/<beamline>/<did-segments>
-	// Default: "http://chess.cornell.edu/"
-	// Must end with a trailing slash.
-	GraphIRIBase string `yaml:"graph_iri_base" json:"graph_iri_base"`
-
-	// DatasetIRIBase is the base IRI prefix used when constructing the subject
-	// IRI for dataset resources ingested from FOXDEN records.
-	// Dataset subjects are formed as: <DatasetIRIBase>dataset<did>
-	// Default: "http://chess.cornell.edu/"
-	// Must end with a trailing slash.
-	DatasetIRIBase string `yaml:"dataset_iri_base" json:"dataset_iri_base"`
 }
 
 // ──────────────────────────────────────────────────────────────────────────────
@@ -176,7 +182,6 @@ type NotificationConfig struct {
 // needs to talk to.
 type FoxdenConfig struct {
 	// MetadataURL is the base URL of the FOXDEN metadata service.
-	// Example: "http://foxden.chess.cornell.edu:8300"
 	MetadataURL string `yaml:"metadata_url" json:"metadata_url"`
 
 	// ProvenanceURL is the base URL of the FOXDEN provenance service.
@@ -185,11 +190,11 @@ type FoxdenConfig struct {
 	// DOIURL is the base URL of the FOXDEN DOI/publication service.
 	DOIURL string `yaml:"doi_url" json:"doi_url"`
 
-	// AuthzURL is FOXDEN authentication/authrization service
-	AuthzURL     string `yaml:"authz_url" json:"authz_url"`
-	ClientID     string `yaml:"authz_client_id" json:"authz_client_id"`
+	// AuthzURL is the FOXDEN authentication/authorization service URL.
+	AuthzURL     string `yaml:"authz_url"           json:"authz_url"`
+	ClientID     string `yaml:"authz_client_id"     json:"authz_client_id"`
 	ClientSecret string `yaml:"authz_client_secret" json:"authz_client_secret"`
-	TokenScope   string `yaml:"token_scope" json:"token_scope"`
+	TokenScope   string `yaml:"token_scope"         json:"token_scope"`
 
 	// Token is the bearer token sent in the Authorization header.
 	// Leave empty if the FOXDEN instance does not require authentication.
@@ -202,12 +207,43 @@ type FoxdenConfig struct {
 }
 
 // ──────────────────────────────────────────────────────────────────────────────
+// Validation
+// ──────────────────────────────────────────────────────────────────────────────
+
+// Validate checks that all mandatory configuration fields are set and
+// well-formed.  Returns a non-nil error describing every violation found.
+// Services must call this immediately after Load and treat any error as fatal.
+//
+// Mandatory fields:
+//   - Node.IRIBase — must be non-empty and end with "/"
+func (c *Config) Validate() error {
+	var errs []string
+
+	if c.Node.IRIBase == "" {
+		errs = append(errs,
+			`node.iri_base is required (e.g. "http://example.org/") — `+
+				`set it in fabric.yaml or via the NODE_IRI_BASE environment variable`)
+	} else if !strings.HasSuffix(c.Node.IRIBase, "/") {
+		errs = append(errs, fmt.Sprintf(
+			"node.iri_base %q must end with a trailing slash", c.Node.IRIBase))
+	}
+
+	if len(errs) == 0 {
+		return nil
+	}
+	return fmt.Errorf("config validation failed:\n  - %s", strings.Join(errs, "\n  - "))
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
 // Loading
 // ──────────────────────────────────────────────────────────────────────────────
 
 // Load reads a config file and returns the parsed Config.
 // If path is empty the function searches the default locations.
 // Environment variables override file values (see ApplyEnv).
+//
+// Load does NOT call Validate; callers should call cfg.Validate() after Load
+// and treat any returned error as fatal.
 func Load(path string) (*Config, error) {
 	resolved, err := resolvePath(path)
 	if err != nil {
@@ -234,6 +270,7 @@ func Load(path string) (*Config, error) {
 				return nil, fmt.Errorf("config: parse YAML %q: %w", resolved, err)
 			}
 		}
+		cfg.ApplyEnv()
 	}
 	return cfg, nil
 }
@@ -244,13 +281,15 @@ func Load(path string) (*Config, error) {
 //
 // Override map:
 //
-//	NODE_ID            → cfg.Node.ID
-//	NODE_NAME          → cfg.Node.Name
-//	NODE_BASE_URL      → cfg.Node.BaseURL
-//	FOXDEN_URL         → cfg.Foxden.MetadataURL  (legacy single-URL override)
-//	FOXDEN_TOKEN       → cfg.Foxden.Token
+//	NODE_ID               → cfg.Node.ID
+//	NODE_NAME             → cfg.Node.Name
+//	NODE_BASE_URL         → cfg.Node.BaseURL
+//	NODE_IRI_BASE         → cfg.Node.IRIBase
+//	FOXDEN_URL            → cfg.Foxden.MetadataURL  (legacy single-URL override)
+//	FOXDEN_TOKEN          → cfg.Foxden.Token
 //	FOXDEN_METADATA_URL   → cfg.Foxden.MetadataURL
 //	FOXDEN_PROVENANCE_URL → cfg.Foxden.ProvenanceURL
+//	DATA_SERVICE_URL      → cfg.Node.DataServiceURL
 func (c *Config) ApplyEnv() {
 	if v := os.Getenv("NODE_ID"); v != "" {
 		c.Node.ID = v
@@ -260,6 +299,9 @@ func (c *Config) ApplyEnv() {
 	}
 	if v := os.Getenv("NODE_BASE_URL"); v != "" {
 		c.Node.BaseURL = v
+	}
+	if v := os.Getenv("NODE_IRI_BASE"); v != "" {
+		c.Node.IRIBase = v
 	}
 	if v := os.Getenv("FOXDEN_URL"); v != "" {
 		c.Foxden.MetadataURL = v
@@ -283,15 +325,17 @@ func (c *Config) ApplyEnv() {
 // Helpers
 // ──────────────────────────────────────────────────────────────────────────────
 
-// defaults returns a Config pre-populated with safe fallback values so that
-// services work out of the box without a config file (local development).
+// defaults returns a Config pre-populated with safe fallback values.
+// Node.IRIBase is intentionally left empty — it has no meaningful default
+// and must always be explicitly provided.
 func defaults() *Config {
 	return &Config{
 		Node: NodeConfig{
-			ID:             "chess-node",
-			Name:           "CHESS Federated Knowledge Fabric Node",
+			ID:             "fabric-node",
+			Name:           "FabricNode",
 			BaseURL:        "http://localhost:8781",
 			DataServiceURL: "http://localhost:8782",
+			IRIBase:        "", // mandatory — must be set in config or NODE_IRI_BASE
 		},
 		Catalog: CatalogConfig{
 			Port: 8781,
@@ -306,8 +350,6 @@ func defaults() *Config {
 			SPARQLResultLimit: 100,
 			StoreType:         "memory",
 			OxigraphTimeout:   30,
-			GraphIRIBase:      "http://chess.cornell.edu/",
-			DatasetIRIBase:    "http://chess.cornell.edu/",
 		},
 		Identity: IdentityConfig{
 			Port: 8783,
@@ -353,8 +395,6 @@ func resolvePath(explicit string) (string, error) {
 			return p, nil
 		}
 	}
-	// No file found — return empty path so caller can decide whether to error
-	// or continue with defaults.
 	return "", fmt.Errorf("config: no config file found; tried %s and $FABRIC_CONFIG; using defaults", strings.Join(candidates[:4], ", "))
 }
 

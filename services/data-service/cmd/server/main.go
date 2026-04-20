@@ -16,18 +16,21 @@ import (
 )
 
 func main() {
-	// ── Load configuration ───────────────────────────────────────────────────
+	// ── Load & validate configuration ────────────────────────────────────────
 	cfg, err := fabricconfig.Load(server.GetEnv("FABRIC_CONFIG", ""))
 	if err != nil {
 		log.Printf("data-service: config warning: %v — using defaults", err)
 	}
+	if err := cfg.Validate(); err != nil {
+		log.Fatalf("data-service: %v", err)
+	}
 
 	// ── Initialise graph store ───────────────────────────────────────────────
-	db, err := store.NewFromConfig(&cfg.DataService)
+	db, err := store.NewFromConfig(&cfg.DataService, cfg.Node.IRIBase)
 	if err != nil {
 		log.Fatalf("data-service: graph store init: %v", err)
 	}
-	log.Printf("data-service: graph store type=%q", cfg.DataService.StoreType)
+	log.Printf("data-service: graph store type=%q iri_base=%q", cfg.DataService.StoreType, cfg.Node.IRIBase)
 
 	token := GetTokenFromFoxden(
 		cfg.Foxden.AuthzURL,
@@ -42,15 +45,20 @@ func main() {
 	if token == "" {
 		log.Println("WARNING: unable to get FOXDEN token...")
 	}
+
 	foxdenCfg := handlers.FoxdenConfig{
 		Client: foxden.NewClientWithToken(
 			cfg.Foxden.MetadataURL,
 			token,
 			cfg.Foxden.Timeout,
 		),
-		Store:          db,
-		GraphIRIBase:   cfg.DataService.GraphIRIBase,
-		DatasetIRIBase: cfg.DataService.DatasetIRIBase,
+		Store:   db,
+		IRIBase: cfg.Node.IRIBase,
+	}
+
+	storeCfg := handlers.StoreConfig{
+		Store:   db,
+		IRIBase: cfg.Node.IRIBase,
 	}
 
 	r := chi.NewRouter()
@@ -72,8 +80,8 @@ func main() {
 
 		r.Route("/datasets/{did:.*}", func(r chi.Router) {
 			r.Get("/sparql", handlers.DatasetSPARQL(db))
-			r.Post("/triples", handlers.Triples(db))
-			r.Post("/validate", handlers.Validate(db))
+			r.Post("/triples", handlers.Triples(storeCfg))
+			r.Post("/validate", handlers.Validate(storeCfg))
 			r.Get("/foxden", handlers.FoxdenDataset(foxdenCfg))
 			r.Post("/foxden/ingest", handlers.FoxdenIngest(foxdenCfg))
 		})

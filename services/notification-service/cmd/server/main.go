@@ -15,10 +15,13 @@ import (
 )
 
 func main() {
-	// ── Load configuration ───────────────────────────────────────────────────
+	// ── Load & validate configuration ────────────────────────────────────────
 	cfg, err := fabricconfig.Load(server.GetEnv("FABRIC_CONFIG", ""))
 	if err != nil {
 		log.Printf("notification-service: config warning: %v — using defaults", err)
+	}
+	if err := cfg.Validate(); err != nil {
+		log.Fatalf("notification-service: %v", err)
 	}
 
 	hcfg := &handlers.Config{

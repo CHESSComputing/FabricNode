@@ -3,20 +3,20 @@
 @prefix sio:   <http://semanticscience.org/resource/> .
 @prefix xsd:   <http://www.w3.org/2001/XMLSchema#> .
 @prefix rdfs:  <http://www.w3.org/2000/01/rdf-schema#> .
-@prefix chess: <http://chess.cornell.edu/ns#> .
+@prefix chess: <{{.ChessNS}}> .
 @prefix fabric: <https://w3id.org/cogitarelink/fabric#> .
 
 # ── ObservationShape ─────────────────────────────────────────────────────────
-# Governs all named graphs that contain SOSA Observations at this CHESS node.
+# Governs all named graphs that contain SOSA Observations at this node.
 # Every write to /graph/observations must pass SHACL validation against this shape.
 
 fabric:ObservationShape
     a sh:NodeShape ;
-    rdfs:label "CHESS Beamline Observation Shape" ;
+    rdfs:label "Beamline Observation Shape" ;
     sh:targetClass sosa:Observation ;
 
     sh:agentInstruction """
-Observations at this CHESS node follow two result patterns:
+Observations at this node follow two result patterns:
 
 Pattern A — simple numeric result:
   <obs> sosa:hasSimpleResult "12.3"^^xsd:decimal .
@@ -78,7 +78,7 @@ Use ?p ?o scanning only as a last resort — prefer targeted property queries.
 # ── BeamlineShape ─────────────────────────────────────────────────────────────
 fabric:BeamlineShape
     a sh:NodeShape ;
-    rdfs:label "CHESS Beamline Descriptor Shape" ;
+    rdfs:label "Beamline Descriptor Shape" ;
     sh:targetClass chess:Beamline ;
 
     sh:property [

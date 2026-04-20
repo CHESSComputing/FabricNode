@@ -1,5 +1,5 @@
 // Package shacl provides structural validation of incoming triples against
-// the CHESS ObservationShape rules, with optional beamline/dataset scope
+// the ObservationShape rules, with optional beamline/dataset scope
 // enforcement.
 package shacl
 
@@ -15,8 +15,6 @@ const (
 	nsRDF  = "http://www.w3.org/1999/02/22-rdf-syntax-ns#"
 	nsSOSA = "http://www.w3.org/ns/sosa/"
 	nsXSD  = "http://www.w3.org/2001/XMLSchema#"
-
-	nsCHESS = "http://chess.cornell.edu/"
 )
 
 // ValidationResult holds the outcome of a SHACL shape check.
@@ -57,15 +55,17 @@ func ValidateObservation(triples []store.Triple) ValidationResult {
 
 // ValidateForDataset runs observation validation AND checks that every
 // sosa:madeBySensor value is hosted by the declared beamline.
+// iriBase is the node-wide IRI prefix from Config.Node.IRIBase
+// (e.g. "http://chess.cornell.edu/"), used to construct expected sensor IRI prefixes.
 // This is the preferred entry point when writing via a beamline-scoped route.
-func ValidateForDataset(ref model.DatasetRef, triples []store.Triple) ValidationResult {
+func ValidateForDataset(ref model.DatasetRef, triples []store.Triple, iriBase string) ValidationResult {
 	r := ValidateObservation(triples)
 	if !r.Conforms {
 		return r
 	}
 
-	// Verify sensor IRIs carry the correct beamline prefix.
-	blPrefix := nsCHESS + "sensor/" + strings.ToLower(string(ref.Beamline))
+	// Sensor IRIs are expected to start with: <iriBase>sensor/<beamline>
+	blPrefix := strings.TrimSuffix(iriBase, "/") + "/sensor/" + strings.ToLower(string(ref.Beamline))
 	subjectTriples := indexBySubject(triples)
 	for subj, props := range subjectTriples {
 		types := getValues(props, nsRDF+"type")

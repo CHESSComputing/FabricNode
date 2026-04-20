@@ -33,6 +33,12 @@ type templateData struct {
 	DataServiceURL string
 	ModifiedDate   string // "YYYY-MM-DD"
 	Beamlines      []fabricconfig.BeamlineConfig
+	// IRIBase is the node-wide IRI prefix from Config.Node.IRIBase.
+	// Templates use it to build namespace prefixes and publisher IRIs.
+	IRIBase string
+	// ChessNS is the RDF namespace IRI: IRIBase + "ns#"
+	// Rendered as the @prefix chess: declaration in Turtle and JSON-LD outputs.
+	ChessNS string
 }
 
 // newData builds the template data model from a canonical config.
@@ -44,6 +50,8 @@ func newData(cfg *fabricconfig.Config) templateData {
 		DataServiceURL: cfg.Node.DataServiceURL,
 		ModifiedDate:   time.Now().UTC().Format("2006-01-02"),
 		Beamlines:      cfg.Catalog.Beamlines,
+		IRIBase:        cfg.Node.IRIBase,
+		ChessNS:        cfg.Node.ChessNS(),
 	}
 }
 

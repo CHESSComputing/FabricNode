@@ -18,6 +18,9 @@ func main() {
 	if err != nil {
 		log.Printf("catalog-service: config warning: %v — using defaults", err)
 	}
+	if err := cfg.Validate(); err != nil {
+		log.Fatalf("catalog-service: %v", err)
+	}
 	// cfg.Node.DataServiceURL is populated from the config file or the
 	// DATA_SERVICE_URL environment variable (applied by fabricconfig.Load).
 

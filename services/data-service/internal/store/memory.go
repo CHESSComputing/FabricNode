@@ -1,9 +1,9 @@
 // In-memory implementation of GraphStore with named-graph support scoped to
-// CHESS beamlines and dataset DIDs.
+// beamlines and dataset DIDs.
 //
-// Named graph IRI scheme:
+// Named graph IRI scheme (base = Config.Node.IRIBase):
 //
-//	http://chess.cornell.edu/graph/<beamlineID>/<did-segments>
+//	<base>graph/<beamlineID>/<did-segments>
 //
 // This implementation is suitable for development and testing.
 // For production persistence use OxigraphStore (oxigraph.go).
@@ -30,18 +30,16 @@ type NamedGraph struct {
 type MemoryStore struct {
 	mu           sync.RWMutex
 	graphs       map[string]*NamedGraph // key: graph IRI
-	graphIRIBase string                 // e.g. "http://chess.cornell.edu/"
+	graphIRIBase string                 // e.g. "http://example.org/" — from Config.Node.IRIBase
 }
 
 // Verify interface compliance at compile time.
 var _ GraphStore = (*MemoryStore)(nil)
 
 // NewMemoryStoreWithBase creates a MemoryStore using base as the graph IRI prefix.
-// base must end with a trailing slash (e.g. "http://chess.cornell.edu/").
+// base must be non-empty and end with a trailing slash (e.g. "http://example.org/").
+// An empty base will produce malformed IRIs — callers must pass cfg.Node.IRIBase.
 func NewMemoryStoreWithBase(base string) *MemoryStore {
-	if base == "" {
-		base = "http://chess.cornell.edu"
-	}
 	s := &MemoryStore{
 		graphs:       make(map[string]*NamedGraph),
 		graphIRIBase: strings.TrimSuffix(base, "/"),
@@ -58,7 +56,7 @@ func (s *MemoryStore) InsertForDataset(ref model.DatasetRef, triples []Triple) e
 	if err := ref.Validate(); err != nil {
 		return fmt.Errorf("store: invalid dataset ref: %w", err)
 	}
-	graphIRI := ref.GraphIRI()
+	graphIRI := ref.GraphIRIWithBase(s.graphIRIBase + "/")
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	ng := s.ensureGraph(graphIRI)
@@ -73,7 +71,7 @@ func (s *MemoryStore) QueryDataset(ref model.DatasetRef, subject, predicate, obj
 	if err := ref.Validate(); err != nil {
 		return nil, fmt.Errorf("store: invalid dataset ref: %w", err)
 	}
-	return s.Query(subject, predicate, object, ref.GraphIRI()), nil
+	return s.Query(subject, predicate, object, ref.GraphIRIWithBase(s.graphIRIBase+"/")), nil
 }
 
 func (s *MemoryStore) QueryBeamline(bl model.BeamlineID, subject, predicate, object string) ([]Triple, error) {
@@ -200,24 +198,26 @@ func matches(value, pattern string) bool {
 }
 
 // ──────────────────────────────────────────────────────────────────────────────
-// Seed data — representative CHESS beamline observations
+// Seed data — representative beamline observations (uses configured IRIBase)
 // ──────────────────────────────────────────────────────────────────────────────
 
 const (
-	nsRDF   = "http://www.w3.org/1999/02/22-rdf-syntax-ns#"
-	nsRDFS  = "http://www.w3.org/2000/01/rdf-schema#"
-	nsSOSA  = "http://www.w3.org/ns/sosa/"
-	nsSIO   = "http://semanticscience.org/resource/"
-	nsCHESS = "http://chess.cornell.edu/"
-	nsXSD   = "http://www.w3.org/2001/XMLSchema#"
-	nsDCT   = "http://purl.org/dc/terms/"
+	nsRDF  = "http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+	nsRDFS = "http://www.w3.org/2000/01/rdf-schema#"
+	nsSOSA = "http://www.w3.org/ns/sosa/"
+	nsSIO  = "http://semanticscience.org/resource/"
+	nsXSD  = "http://www.w3.org/2001/XMLSchema#"
+	nsDCT  = "http://purl.org/dc/terms/"
 )
 
 func (s *MemoryStore) seed() {
-	const (
-		graphBeamlines = nsCHESS + "graph/beamlines"
-		graphSensors   = nsCHESS + "graph/sensors"
-	)
+	// All IRI construction uses s.graphIRIBase so seed data is consistent
+	// with whatever IRIBase the operator configured.
+	base := s.graphIRIBase // already stripped of trailing slash
+	chessNS := base + "/ns#"
+
+	graphBeamlines := base + "/graph/beamlines"
+	graphSensors := base + "/graph/sensors"
 
 	beamlines := []struct{ id, label, blType string }{
 		{"id1", "Beamline ID1 — X-ray Diffraction", "x-ray-diffraction"},
@@ -225,12 +225,12 @@ func (s *MemoryStore) seed() {
 		{"fast", "Beamline FAST — Time-Resolved Scattering", "time-resolved-scattering"},
 	}
 	for _, bl := range beamlines {
-		subj := nsCHESS + "beamline/" + bl.id
-		s.addTriple(subj, nsRDF+"type", nsCHESS+"Beamline", "uri", graphBeamlines)
+		subj := base + "/beamline/" + bl.id
+		s.addTriple(subj, nsRDF+"type", base+"/Beamline", "uri", graphBeamlines)
 		s.addTriple(subj, nsRDFS+"label", bl.label, "literal", graphBeamlines)
-		s.addTriple(subj, nsCHESS+"ns#beamlineType", bl.blType, "literal", graphBeamlines)
+		s.addTriple(subj, chessNS+"beamlineType", bl.blType, "literal", graphBeamlines)
 		s.addTriple(subj, nsDCT+"description",
-			fmt.Sprintf("CHESS beamline %s (%s)", strings.ToUpper(bl.id), bl.blType),
+			fmt.Sprintf("Beamline %s (%s)", strings.ToUpper(bl.id), bl.blType),
 			"literal", graphBeamlines)
 	}
 
@@ -240,10 +240,10 @@ func (s *MemoryStore) seed() {
 		{"fast-detector-01", "FAST High-Speed Scintillator Detector", "fast"},
 	}
 	for _, sen := range sensors {
-		subj := nsCHESS + "sensor/" + sen.id
+		subj := base + "/sensor/" + sen.id
 		s.addTriple(subj, nsRDF+"type", nsSOSA+"Sensor", "uri", graphSensors)
 		s.addTriple(subj, nsRDFS+"label", sen.label, "literal", graphSensors)
-		s.addTriple(subj, nsSOSA+"isHostedBy", nsCHESS+"beamline/"+sen.blID, "uri", graphSensors)
+		s.addTriple(subj, nsSOSA+"isHostedBy", base+"/beamline/"+sen.blID, "uri", graphSensors)
 	}
 
 	seedObs := []struct {
@@ -263,26 +263,26 @@ func (s *MemoryStore) seed() {
 	for _, od := range seedObs {
 		did := model.DatasetDID(fmt.Sprintf("/beamline=%s/btr=%s/cycle=%s/sample_name=%s",
 			od.beamline, od.btr, od.cycle, od.sampleName))
-		graphIRI := did.GraphIRI()
+		graphIRI := did.GraphIRIWithBase(base + "/")
 
-		obsID := nsCHESS + "observation/" + uuid.NewString()
+		obsID := base + "/observation/" + uuid.NewString()
 		t := time.Now().AddDate(0, 0, -od.daysAgo).UTC()
 
 		s.addTriple(obsID, nsRDF+"type", nsSOSA+"Observation", "uri", graphIRI)
-		s.addTriple(obsID, nsSOSA+"madeBySensor", nsCHESS+"sensor/"+od.sensorID, "uri", graphIRI)
-		s.addTriple(obsID, nsSOSA+"observedProperty", nsCHESS+"property/"+od.propLabel, "uri", graphIRI)
+		s.addTriple(obsID, nsSOSA+"madeBySensor", base+"/sensor/"+od.sensorID, "uri", graphIRI)
+		s.addTriple(obsID, nsSOSA+"observedProperty", base+"/property/"+od.propLabel, "uri", graphIRI)
 		s.addTriple(obsID, nsSOSA+"resultTime",
 			t.Format(time.RFC3339)+"^^"+nsXSD+"dateTime", "literal", graphIRI)
 		s.addTriple(obsID, nsSOSA+"hasSimpleResult",
 			od.result+"^^"+nsXSD+"decimal", "literal", graphIRI)
-		s.addTriple(obsID, nsCHESS+"ns#runNumber",
+		s.addTriple(obsID, chessNS+"runNumber",
 			fmt.Sprintf("%d", od.runNum)+"^^"+nsXSD+"integer", "literal", graphIRI)
 
-		attrID := nsCHESS + "attr/" + uuid.NewString()
+		attrID := base + "/attr/" + uuid.NewString()
 		s.addTriple(obsID, nsSIO+"has-attribute", attrID, "uri", graphIRI)
 		s.addTriple(attrID, nsRDF+"type", nsSIO+"MeasuredValue", "uri", graphIRI)
 		s.addTriple(attrID, nsSIO+"has-value", od.result+"^^"+nsXSD+"decimal", "literal", graphIRI)
-		s.addTriple(attrID, nsSIO+"has-unit", nsCHESS+"unit/"+od.unit, "uri", graphIRI)
+		s.addTriple(attrID, nsSIO+"has-unit", base+"/unit/"+od.unit, "uri", graphIRI)
 	}
 }
 

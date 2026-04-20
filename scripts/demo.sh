@@ -13,8 +13,8 @@ JTYPE="Content-Type: application/ld+json"
 JJSON="Content-Type: application/json"
 
 # Beamline and dataset DID used throughout the write/query demos.
-BEAMLINE="id1"
-DID="/beamline=id1/btr=btr001/cycle=2024-3/sample_name=silicon-std"
+BEAMLINE="3a"
+DID="/beamline=3a/btr=test-123-a/cycle=2024-1/sample_name=lup-20kev-1/test-analysis"
 DID_ENC=$(python3 -c "import urllib.parse,sys; print(urllib.parse.quote(sys.argv[1], safe=''))" "$DID")
 
 sep()  { printf "\n\033[1;36m══ %s ══\033[0m\n" "$1"; }

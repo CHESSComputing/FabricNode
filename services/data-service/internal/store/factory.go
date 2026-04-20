@@ -9,29 +9,27 @@ import (
 )
 
 // NewFromConfig creates the GraphStore backend described by cfg.
+// iriBase is the node-wide IRI prefix from Config.Node.IRIBase; it is passed
+// explicitly rather than read from DataServiceConfig so the factory remains
+// decoupled from the section that owns the field.
 //
-// Supported store types (cfg.DataService.StoreType):
+// Supported store types (cfg.StoreType):
 //
-//	"memory"    — in-memory store, seeded with demo CHESS data (default)
-//	"oxigraph"  — Oxigraph SPARQL server; cfg.DataService.OxigraphURL must be set
+//	"memory"    — in-memory store, seeded with demo data (default)
+//	"oxigraph"  — Oxigraph SPARQL server; cfg.OxigraphURL must be set
 //
 // An unknown store type returns an error; callers should treat this as fatal.
-func NewFromConfig(cfg *fabricconfig.DataServiceConfig) (GraphStore, error) {
-	graphBase := cfg.GraphIRIBase
-	if graphBase == "" {
-		graphBase = "http://chess.cornell.edu/"
-	}
-
+func NewFromConfig(cfg *fabricconfig.DataServiceConfig, iriBase string) (GraphStore, error) {
 	switch cfg.StoreType {
 	case "", "memory":
-		return NewMemoryStoreWithBase(graphBase), nil
+		return NewMemoryStoreWithBase(iriBase), nil
 
 	case "oxigraph":
 		if cfg.OxigraphURL == "" {
 			return nil, fmt.Errorf("store: oxigraph selected but data_service.oxigraph_url is not set")
 		}
 		timeout := time.Duration(cfg.OxigraphTimeout) * time.Second
-		return NewOxigraphStoreWithBase(cfg.OxigraphURL, graphBase, timeout), nil
+		return NewOxigraphStoreWithBase(cfg.OxigraphURL, iriBase, timeout), nil
 
 	default:
 		return nil, fmt.Errorf("store: unknown store_type %q (valid: memory, oxigraph)", cfg.StoreType)

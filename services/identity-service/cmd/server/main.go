@@ -18,10 +18,13 @@ import (
 )
 
 func main() {
-	// ── Load configuration ───────────────────────────────────────────────────
+	// ── Load & validate configuration ────────────────────────────────────────
 	cfg, err := fabricconfig.Load(server.GetEnv("FABRIC_CONFIG", ""))
 	if err != nil {
 		log.Printf("identity-service: config warning: %v — using defaults", err)
+	}
+	if err := cfg.Validate(); err != nil {
+		log.Fatalf("identity-service: %v", err)
 	}
 
 	baseURL := server.GetEnv("NODE_BASE_URL", fmt.Sprintf("http://localhost:%d", cfg.Identity.Port))
@@ -95,6 +98,7 @@ func main() {
 		KeyPair:   kp,
 		DIDDoc:    didDoc,
 		ConformVC: conformVC,
+		IRIBase:   cfg.Node.IRIBase,
 	}
 
 	// ── Router ───────────────────────────────────────────────────────────────
