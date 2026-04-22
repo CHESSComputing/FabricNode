@@ -23,6 +23,53 @@ ORDER BY ?label
 """ .
 
 # ── Example 2: list recent observations for a beamline ───────────────────────
+<{{.BaseURL}}/sparql-examples/datasets-by-pi>
+    a spex:SparqlExample ;
+    rdfs:label "Find all datasets by PI" ;
+    schema:description "Find all datasets by PI" ;
+    spex:query """
+PREFIX sosa: <http://www.w3.org/ns/sosa/>
+PREFIX xsd:  <http://www.w3.org/2001/XMLSchema#>
+PREFIX chess: <{{.ChessNS}}>
+
+SELECT ?dataset ?pi WHERE {
+  ?dataset dct:creator ?pi .
+}
+""" .
+
+<{{.BaseURL}}/sparql-examples/datasets-by-detector>
+    a spex:SparqlExample ;
+    rdfs:label "Find datasets using a specific detector" ;
+    schema:description "Find datasets using a specific detector" ;
+    spex:query """
+PREFIX sosa: <http://www.w3.org/ns/sosa/>
+PREFIX xsd:  <http://www.w3.org/2001/XMLSchema#>
+PREFIX chess: <{{.ChessNS}}>
+
+SELECT ?dataset ?detector WHERE {
+  ?dataset chess:detector ?detector .
+  FILTER(CONTAINS(?detector, "Pilatus"))
+}
+""" .
+
+<{{.BaseURL}}/sparql-examples/datasets-by-detector>
+    a spex:SparqlExample ;
+    rdfs:label "Find datasets with a DOI";
+    schema:description "Find datasets with a DOI" ;
+    spex:query """
+PREFIX sosa: <http://www.w3.org/ns/sosa/>
+PREFIX xsd:  <http://www.w3.org/2001/XMLSchema#>
+PREFIX chess: <{{.ChessNS}}>
+
+SELECT ?dataset ?doi WHERE {
+  ?dataset dct:relation ?doi .
+  FILTER(STRSTARTS(STR(?doi), "10."))
+}
+""" .
+
+
+
+# ── Example 2: list recent observations for a beamline ───────────────────────
 <{{.BaseURL}}/sparql-examples/recent-observations>
     a spex:SparqlExample ;
     rdfs:label "Recent observations for a beamline" ;
