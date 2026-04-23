@@ -143,6 +143,26 @@ func mergeFieldMaps(fm *FieldMaps, chessNS string) *FieldMaps {
 }
 
 // ──────────────────────────────────────────────────────────────────────────────
+// formatDecimal formats a float64 as a valid xsd:decimal lexical value.
+//
+// xsd:decimal forbids scientific notation; its lexical space is
+// [+-]?[0-9]*\.[0-9]*.  strconv.FormatFloat with format 'f' and precision -1
+// produces the shortest decimal representation that round-trips exactly,
+// without ever emitting an exponent.
+// ──────────────────────────────────────────────────────────────────────────────
+func formatDecimal(v float64) string {
+	return strconv.FormatFloat(v, 'f', -1, 64)
+}
+
+// formatInteger formats a float64 (JSON numbers are always float64) as a
+// valid xsd:integer lexical value: [+-]?[0-9]+ — no decimal point, no
+// exponent.  Using %g on large values like 1e6 would produce "1e+06" which
+// is not a legal xsd:integer lexical form.
+func formatInteger(v float64) string {
+	return fmt.Sprintf("%d", int64(v))
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
 // RecordToTriples
 // ──────────────────────────────────────────────────────────────────────────────
 
@@ -178,12 +198,25 @@ func RecordToTriples(rec Record, graphIRI, iriBase string, fm *FieldMaps) ([]sto
 	subj := chessBase + "dataset" + did // IRI for this dataset resource
 	var triples []store.Triple
 
-	keys := make(map[string]bool)
+	// Use a composite (predicate, object) key instead of predicate-only.
+	//
+	// The original predicate-only key map caused multi-valued array fields
+	// (e.g. chess:technique, chess:detector) to emit only their first value,
+	// silently dropping the rest.  RDF explicitly permits multiple triples
+	// with the same predicate on a subject; deduplication must only suppress
+	// exact (s, p, o) duplicates, not all triples sharing a predicate.
+	//
+	// Truly singular fields (rdf:type, dct:identifier) are naturally
+	// deduplicated because their object value is always the same.
+	type tripleKey struct{ pred, obj string }
+	seen := make(map[tripleKey]bool)
 
 	add := func(pred, obj, objType string) {
-		if _, ok := keys[pred]; ok {
+		k := tripleKey{pred, obj}
+		if seen[k] {
 			return
 		}
+		seen[k] = true
 		triples = append(triples, store.Triple{
 			Subject:    subj,
 			Predicate:  pred,
@@ -191,13 +224,14 @@ func RecordToTriples(rec Record, graphIRI, iriBase string, fm *FieldMaps) ([]sto
 			ObjectType: objType,
 			Graph:      graphIRI,
 		})
-		keys[pred] = true
 	}
 	addLit := func(pred, val string) { add(pred, val, "literal") }
 	addTypedLit := func(pred, val, dtype string) {
-		if _, ok := keys[pred]; ok {
+		k := tripleKey{pred, val}
+		if seen[k] {
 			return
 		}
+		seen[k] = true
 		triples = append(triples, store.Triple{
 			Subject:    subj,
 			Predicate:  pred,
@@ -206,7 +240,6 @@ func RecordToTriples(rec Record, graphIRI, iriBase string, fm *FieldMaps) ([]sto
 			Datatype:   dtype,
 			Graph:      graphIRI,
 		})
-		keys[pred] = true
 	}
 	addURI := func(pred, val string) { add(pred, val, "uri") }
 
@@ -235,14 +268,15 @@ func RecordToTriples(rec Record, graphIRI, iriBase string, fm *FieldMaps) ([]sto
 				addLit(pred, v)
 			}
 		case float64:
-			xsdType := nsXSD + "decimal"
+			// use formatInteger / formatDecimal instead of %g.
+			// %g emits scientific notation (e.g. "1e+06") which is illegal
+			// for both xsd:integer and xsd:decimal lexical spaces.
 			if maps.NumericType[field] == "int64" {
-				xsdType = nsXSD + "integer"
+				addTypedLit(pred, formatInteger(v), nsXSD+"integer")
+			} else {
+				addTypedLit(pred, formatDecimal(v), nsXSD+"decimal")
 			}
-			//addLit(pred, fmt.Sprintf("%g^^%s", v, xsdType))
-			addTypedLit(pred, fmt.Sprintf("%g", v), xsdType)
 		case bool:
-			//addLit(pred, fmt.Sprintf("%t^^%sboolean", v, nsXSD))
 			addTypedLit(pred, fmt.Sprintf("%t", v), nsXSD+"boolean")
 		}
 	}
@@ -250,7 +284,6 @@ func RecordToTriples(rec Record, graphIRI, iriBase string, fm *FieldMaps) ([]sto
 	// ── Boolean flags ─────────────────────────────────────────────────────────
 	for field, pred := range maps.Bool {
 		if val, ok := rec[field].(bool); ok {
-			//addLit(pred, fmt.Sprintf("%t^^%sboolean", val, nsXSD))
 			addTypedLit(pred, fmt.Sprintf("%t", val), nsXSD+"boolean")
 		}
 	}
@@ -274,14 +307,20 @@ func RecordToTriples(rec Record, graphIRI, iriBase string, fm *FieldMaps) ([]sto
 		if !ok {
 			continue
 		}
+		// choose integer vs decimal format before the loop, and use
+		// the correct formatter — not %g — to avoid illegal lexical forms.
+		isInt := maps.NumericType[field] == "int64"
 		xsdType := nsXSD + "decimal"
-		if maps.NumericType[field] == "int64" {
+		if isInt {
 			xsdType = nsXSD + "integer"
 		}
 		for _, elem := range arr {
 			if v, ok := elem.(float64); ok {
-				//addLit(pred, fmt.Sprintf("%g^^%s", v, xsdType))
-				addTypedLit(pred, fmt.Sprintf("%g", v), xsdType)
+				if isInt {
+					addTypedLit(pred, formatInteger(v), xsdType)
+				} else {
+					addTypedLit(pred, formatDecimal(v), xsdType)
+				}
 			}
 		}
 	}
@@ -295,19 +334,38 @@ func RecordToTriples(rec Record, graphIRI, iriBase string, fm *FieldMaps) ([]sto
 			}
 			phaseIRI := fmt.Sprintf("%sdataset%s/phase/%d", chessBase, did, i)
 			addURI(chessNS+"crystallographicPhase", phaseIRI)
+
+			// type each phase sub-resource so SPARQL ?x a chess:CrystallographicPhase
+			// queries work and OWL/RDFS reasoners can classify it correctly.
+			triples = append(triples, store.Triple{
+				Subject:    phaseIRI,
+				Predicate:  nsRDF + "type",
+				Object:     chessNS + "CrystallographicPhase",
+				ObjectType: "uri",
+				Graph:      graphIRI,
+			})
+
 			if name, ok := phase["name"].(string); ok {
 				triples = append(triples, store.Triple{
-					Subject: phaseIRI, Predicate: nsRDFS + "label",
-					Object: name, ObjectType: "literal", Graph: graphIRI,
+					Subject:    phaseIRI,
+					Predicate:  nsRDFS + "label",
+					Object:     name,
+					ObjectType: "literal",
+					Graph:      graphIRI,
 				})
 			}
-			if sg, ok := phase["space_group"].(int64); ok {
+
+			// JSON unmarshal always produces float64 for numbers, never
+			// int64.  The original int64 type assertion was dead code and the
+			// space_group triple was silently never emitted.
+			if sg, ok := phase["space_group"].(float64); ok {
 				triples = append(triples, store.Triple{
-					Subject: phaseIRI, Predicate: chessNS + "spaceGroup",
-					//Object:     fmt.Sprintf("%g^^%sinteger", sg, nsXSD),
-					Object:     fmt.Sprintf("%g", sg),
+					Subject:    phaseIRI,
+					Predicate:  chessNS + "spaceGroup",
+					Object:     formatInteger(sg),
 					Datatype:   nsXSD + "integer",
-					ObjectType: "literal", Graph: graphIRI,
+					ObjectType: "literal",
+					Graph:      graphIRI,
 				})
 			}
 		}
@@ -322,8 +380,8 @@ func RecordToTriples(rec Record, graphIRI, iriBase string, fm *FieldMaps) ([]sto
 				if i < len(labels) {
 					label = "unitCell_" + labels[i]
 				}
-				//addLit(chessNS+label, fmt.Sprintf("%g^^%sdecimal", f, nsXSD))
-				addTypedLit(chessNS+label, fmt.Sprintf("%g", f), nsXSD+"decimal")
+				// use formatDecimal — xsd:decimal forbids scientific notation.
+				addTypedLit(chessNS+label, formatDecimal(f), nsXSD+"decimal")
 			}
 		}
 	}
@@ -332,8 +390,8 @@ func RecordToTriples(rec Record, graphIRI, iriBase string, fm *FieldMaps) ([]sto
 	if sgs, ok := rec["sample_space_group"].([]any); ok {
 		for _, v := range sgs {
 			if f, ok := v.(float64); ok {
-				//addLit(chessNS+"sampleSpaceGroup", fmt.Sprintf("%g^^%sinteger", f, nsXSD))
-				addTypedLit(chessNS+"sampleSpaceGroup", fmt.Sprintf("%g", f), nsXSD+"integer")
+				// use formatInteger — xsd:integer forbids scientific notation.
+				addTypedLit(chessNS+"sampleSpaceGroup", formatInteger(f), nsXSD+"integer")
 			}
 		}
 	}
