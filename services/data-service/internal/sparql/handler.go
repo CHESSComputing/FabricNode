@@ -180,7 +180,11 @@ func writeResults(w http.ResponseWriter, results []store.Triple) {
 		if t.ObjectType == "uri" {
 			r.O = binding{"type": "uri", "value": t.Object}
 		} else {
-			r.O = binding{"type": "literal", "value": t.Object}
+			if t.Datatype != "" {
+				r.O = binding{"type": "literal", "value": t.Object, "datatype": t.Datatype}
+			} else {
+				r.O = binding{"type": "literal", "value": t.Object}
+			}
 		}
 		resp.Results.Bindings = append(resp.Results.Bindings, r)
 	}
