@@ -20,7 +20,9 @@ package foxden
 
 import (
 	"fmt"
+	"strconv"
 	"strings"
+	"time"
 
 	"github.com/CHESSComputing/FabricNode/services/data-service/internal/store"
 	"github.com/google/uuid"
@@ -176,7 +178,12 @@ func RecordToTriples(rec Record, graphIRI, iriBase string, fm *FieldMaps) ([]sto
 	subj := chessBase + "dataset" + did // IRI for this dataset resource
 	var triples []store.Triple
 
+	keys := make(map[string]bool)
+
 	add := func(pred, obj, objType string) {
+		if _, ok := keys[pred]; ok {
+			return
+		}
 		triples = append(triples, store.Triple{
 			Subject:    subj,
 			Predicate:  pred,
@@ -184,8 +191,23 @@ func RecordToTriples(rec Record, graphIRI, iriBase string, fm *FieldMaps) ([]sto
 			ObjectType: objType,
 			Graph:      graphIRI,
 		})
+		keys[pred] = true
 	}
 	addLit := func(pred, val string) { add(pred, val, "literal") }
+	addTypedLit := func(pred, val, dtype string) {
+		if _, ok := keys[pred]; ok {
+			return
+		}
+		triples = append(triples, store.Triple{
+			Subject:    subj,
+			Predicate:  pred,
+			Object:     val,
+			ObjectType: "literal",
+			Datatype:   dtype,
+			Graph:      graphIRI,
+		})
+		keys[pred] = true
+	}
 	addURI := func(pred, val string) { add(pred, val, "uri") }
 
 	// rdf:type
@@ -200,6 +222,13 @@ func RecordToTriples(rec Record, graphIRI, iriBase string, fm *FieldMaps) ([]sto
 		if !ok {
 			continue
 		}
+		if field == "date" {
+			// convert value to ISO date format
+			if vstr, err := UnixToISO8601(val); err == nil {
+				addTypedLit(pred, vstr, nsXSD+"dateTime")
+				continue
+			}
+		}
 		switch v := val.(type) {
 		case string:
 			if v != "" {
@@ -210,16 +239,19 @@ func RecordToTriples(rec Record, graphIRI, iriBase string, fm *FieldMaps) ([]sto
 			if maps.NumericType[field] == "int64" {
 				xsdType = nsXSD + "integer"
 			}
-			addLit(pred, fmt.Sprintf("%g^^%s", v, xsdType))
+			//addLit(pred, fmt.Sprintf("%g^^%s", v, xsdType))
+			addTypedLit(pred, fmt.Sprintf("%g", v), xsdType)
 		case bool:
-			addLit(pred, fmt.Sprintf("%t^^%sboolean", v, nsXSD))
+			//addLit(pred, fmt.Sprintf("%t^^%sboolean", v, nsXSD))
+			addTypedLit(pred, fmt.Sprintf("%t", v), nsXSD+"boolean")
 		}
 	}
 
 	// ── Boolean flags ─────────────────────────────────────────────────────────
 	for field, pred := range maps.Bool {
 		if val, ok := rec[field].(bool); ok {
-			addLit(pred, fmt.Sprintf("%t^^%sboolean", val, nsXSD))
+			//addLit(pred, fmt.Sprintf("%t^^%sboolean", val, nsXSD))
+			addTypedLit(pred, fmt.Sprintf("%t", val), nsXSD+"boolean")
 		}
 	}
 
@@ -248,7 +280,8 @@ func RecordToTriples(rec Record, graphIRI, iriBase string, fm *FieldMaps) ([]sto
 		}
 		for _, elem := range arr {
 			if v, ok := elem.(float64); ok {
-				addLit(pred, fmt.Sprintf("%g^^%s", v, xsdType))
+				//addLit(pred, fmt.Sprintf("%g^^%s", v, xsdType))
+				addTypedLit(pred, fmt.Sprintf("%g", v), xsdType)
 			}
 		}
 	}
@@ -268,10 +301,12 @@ func RecordToTriples(rec Record, graphIRI, iriBase string, fm *FieldMaps) ([]sto
 					Object: name, ObjectType: "literal", Graph: graphIRI,
 				})
 			}
-			if sg, ok := phase["space_group"].(float64); ok {
+			if sg, ok := phase["space_group"].(int64); ok {
 				triples = append(triples, store.Triple{
 					Subject: phaseIRI, Predicate: chessNS + "spaceGroup",
-					Object:     fmt.Sprintf("%g^^%sinteger", sg, nsXSD),
+					//Object:     fmt.Sprintf("%g^^%sinteger", sg, nsXSD),
+					Object:     fmt.Sprintf("%g", sg),
+					Datatype:   nsXSD + "integer",
 					ObjectType: "literal", Graph: graphIRI,
 				})
 			}
@@ -287,7 +322,8 @@ func RecordToTriples(rec Record, graphIRI, iriBase string, fm *FieldMaps) ([]sto
 				if i < len(labels) {
 					label = "unitCell_" + labels[i]
 				}
-				addLit(chessNS+label, fmt.Sprintf("%g^^%sdecimal", f, nsXSD))
+				//addLit(chessNS+label, fmt.Sprintf("%g^^%sdecimal", f, nsXSD))
+				addTypedLit(chessNS+label, fmt.Sprintf("%g", f), nsXSD+"decimal")
 			}
 		}
 	}
@@ -296,7 +332,8 @@ func RecordToTriples(rec Record, graphIRI, iriBase string, fm *FieldMaps) ([]sto
 	if sgs, ok := rec["sample_space_group"].([]any); ok {
 		for _, v := range sgs {
 			if f, ok := v.(float64); ok {
-				addLit(chessNS+"sampleSpaceGroup", fmt.Sprintf("%g^^%sinteger", f, nsXSD))
+				//addLit(chessNS+"sampleSpaceGroup", fmt.Sprintf("%g^^%sinteger", f, nsXSD))
+				addTypedLit(chessNS+"sampleSpaceGroup", fmt.Sprintf("%g", f), nsXSD+"integer")
 			}
 		}
 	}
@@ -329,4 +366,27 @@ func GraphIRIFromDID(did, graphIRIBase string) string {
 		bl = strings.ToLower(parts[0][idx+1:])
 	}
 	return fmt.Sprintf("%s/graph/%s/%s", base, bl, parts[1])
+}
+
+// UnixToISO8601 converts values like "1.769456896e+09" into RFC3339 / ISO8601.
+func UnixToISO8601(v any) (string, error) {
+	var ts float64
+
+	switch val := v.(type) {
+	case float64:
+		ts = val
+	case string:
+		f, err := strconv.ParseFloat(val, 64)
+		if err != nil {
+			return "", fmt.Errorf("invalid unix timestamp string: %w", err)
+		}
+		ts = f
+	default:
+		return "", fmt.Errorf("unsupported type %T", v)
+	}
+
+	// assume seconds (not milliseconds)
+	t := time.Unix(int64(ts), int64((ts-float64(int64(ts)))*1e9))
+
+	return t.UTC().Format(time.RFC3339), nil
 }
