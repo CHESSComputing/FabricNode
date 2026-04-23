@@ -204,6 +204,12 @@ type FoxdenConfig struct {
 
 	// Timeout is the HTTP client timeout in seconds (default: 10).
 	Timeout int `yaml:"timeout" json:"timeout"`
+
+	// FOXDEN schema JSON files (e.g. ID1A3.json, ID3A.json, …).
+	// When set, rdf.go reads the schema files at startup and uses them to build
+	// complete RDF field mappings for every known beamline.
+	// If empty, the built-in static maps are used as fallback.
+	SchemaFiles []string `yaml:"schema_files" json:"schema_files"`
 }
 
 // ──────────────────────────────────────────────────────────────────────────────
@@ -270,7 +276,7 @@ func Load(path string) (*Config, error) {
 				return nil, fmt.Errorf("config: parse YAML %q: %w", resolved, err)
 			}
 		}
-		//cfg.ApplyEnv()
+		cfg.ApplyEnv()
 	}
 	return cfg, nil
 }

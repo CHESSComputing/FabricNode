@@ -72,7 +72,7 @@ func allGraphs(ts []store.Triple, graphIRI string) bool {
 // ── RecordToTriples ───────────────────────────────────────────────────────────
 
 func TestRecordToTriples_MissingDID(t *testing.T) {
-	_, err := foxden.RecordToTriples(foxden.Record{}, "http://example.org/graph/1", chessBase)
+	_, err := foxden.RecordToTriples(foxden.Record{}, "http://example.org/graph/1", chessBase, nil)
 	if err == nil {
 		t.Fatal("expected error for record without DID, got nil")
 	}
@@ -85,7 +85,7 @@ func TestRecordToTriples_MinimalRecord_AlwaysEmitsTypeAndIdentifier(t *testing.T
 	did := "/beamline=id1/btr=btr001/cycle=2024-3/sample_name=silicon-std"
 	graphIRI := chessBase + "graph/id1/btr=btr001/cycle=2024-3/sample_name=silicon-std"
 
-	ts, err := foxden.RecordToTriples(minimalRecord(did), graphIRI, chessBase)
+	ts, err := foxden.RecordToTriples(minimalRecord(did), graphIRI, chessBase, nil)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -127,7 +127,7 @@ func TestRecordToTriples_ScalarFields(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			rec := minimalRecord(did)
 			rec[tc.field] = tc.value
-			ts, err := foxden.RecordToTriples(rec, graphIRI, chessBase)
+			ts, err := foxden.RecordToTriples(rec, graphIRI, chessBase, nil)
 			if err != nil {
 				t.Fatalf("unexpected error: %v", err)
 			}
@@ -143,7 +143,7 @@ func TestRecordToTriples_EmptyStringFieldIsSkipped(t *testing.T) {
 	did := "/beamline=id1/btr=x/cycle=2024-3/sample_name=y"
 	rec := minimalRecord(did)
 	rec["btr"] = "" // empty — should not emit a triple
-	ts, err := foxden.RecordToTriples(rec, "http://example.org/g", chessBase)
+	ts, err := foxden.RecordToTriples(rec, "http://example.org/g", chessBase, nil)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -170,7 +170,7 @@ func TestRecordToTriples_BooleanFlags(t *testing.T) {
 		t.Run(tc.field+"=true", func(t *testing.T) {
 			rec := minimalRecord(did)
 			rec[tc.field] = true
-			ts, err := foxden.RecordToTriples(rec, graphIRI, chessBase)
+			ts, err := foxden.RecordToTriples(rec, graphIRI, chessBase, nil)
 			if err != nil {
 				t.Fatalf("unexpected error: %v", err)
 			}
@@ -183,7 +183,7 @@ func TestRecordToTriples_BooleanFlags(t *testing.T) {
 		t.Run(tc.field+"=false", func(t *testing.T) {
 			rec := minimalRecord(did)
 			rec[tc.field] = false
-			ts, err := foxden.RecordToTriples(rec, graphIRI, chessBase)
+			ts, err := foxden.RecordToTriples(rec, graphIRI, chessBase, nil)
 			if err != nil {
 				t.Fatalf("unexpected error: %v", err)
 			}
@@ -217,7 +217,7 @@ func TestRecordToTriples_ArrayFields(t *testing.T) {
 				arr[i] = v
 			}
 			rec[tc.field] = arr
-			ts, err := foxden.RecordToTriples(rec, graphIRI, chessBase)
+			ts, err := foxden.RecordToTriples(rec, graphIRI, chessBase, nil)
 			if err != nil {
 				t.Fatalf("unexpected error: %v", err)
 			}
@@ -245,7 +245,7 @@ func TestRecordToTriples_ArrayField_EmptyStringsSkipped(t *testing.T) {
 	did := "/beamline=id1/btr=x/cycle=2024-3/sample_name=y"
 	rec := minimalRecord(did)
 	rec["technique"] = []any{"SAXS", "", "WAXS"} // empty element should be skipped
-	ts, err := foxden.RecordToTriples(rec, "http://example.org/g", chessBase)
+	ts, err := foxden.RecordToTriples(rec, "http://example.org/g", chessBase, nil)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -264,7 +264,7 @@ func TestRecordToTriples_CrystallographicPhases(t *testing.T) {
 		map[string]any{"name": "Buffer"},
 	}
 
-	ts, err := foxden.RecordToTriples(rec, graphIRI, chessBase)
+	ts, err := foxden.RecordToTriples(rec, graphIRI, chessBase, nil)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -311,7 +311,7 @@ func TestRecordToTriples_AllTriplesHaveCorrectSubject(t *testing.T) {
 	rec["cycle"] = "2024-3"
 	rec["technique"] = []any{"SAXS"}
 
-	ts, err := foxden.RecordToTriples(rec, graphIRI, chessBase)
+	ts, err := foxden.RecordToTriples(rec, graphIRI, chessBase, nil)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}

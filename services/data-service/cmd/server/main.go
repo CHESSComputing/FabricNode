@@ -25,6 +25,13 @@ func main() {
 		log.Fatalf("data-service: %v", err)
 	}
 
+	// ── Load FOXDEN schema field maps ─────────────────────────────────────────
+	schemaFiles := cfg.Foxden.SchemaFiles
+	fm, err := foxden.LoadFieldMaps(schemaFiles, cfg.Node.ChessNS())
+	if err != nil {
+		log.Fatalf("data-service: schema load: %v", err)
+	}
+
 	// ── Initialise graph store ───────────────────────────────────────────────
 	db, err := store.NewFromConfig(&cfg.DataService, cfg.Node.IRIBase)
 	if err != nil {
@@ -52,8 +59,9 @@ func main() {
 			token,
 			cfg.Foxden.Timeout,
 		),
-		Store:   db,
-		IRIBase: cfg.Node.IRIBase,
+		Store:     db,
+		IRIBase:   cfg.Node.IRIBase,
+		FieldMaps: fm,
 	}
 
 	storeCfg := handlers.StoreConfig{
