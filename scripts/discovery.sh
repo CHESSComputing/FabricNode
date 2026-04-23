@@ -78,7 +78,9 @@ check_fail() { FAIL=$((FAIL+1)); fail "$*"; }
 # Extract lower-case beamline ID from a DID string
 # /beamline=3a/btr=... → 3a
 beamline_from_did() {
-    echo "$1" | grep -oP '(?<=/beamline=)[^/]+' | tr '[:upper:]' '[:lower:]'
+    # grep -P only works on Linux
+    #echo "$1" | grep -oP '(?<=/beamline=)[^/]+' | tr '[:upper:]' '[:lower:]'
+    printf "%s\n" "$1" | sed -n 's|.*/beamline=\([^/]*\).*|\1|p' | tr '[:upper:]' '[:lower:]'
 }
 
 # Percent-encode a DID for use as a URL path segment (encodes / and =)
