@@ -179,6 +179,22 @@ cmd_restart() {
 }
 
 # ── status ────────────────────────────────────────────────────────────────────
+
+config_path() {
+  echo "$ROOT_DIR/config/fabric.yaml"
+}
+
+uses_https() {
+  local cfg
+  cfg=$(config_path "$1")
+
+  # No config → assume HTTP
+  [ -f "$cfg" ] || return 1
+
+  # Detect TLS section or cert setting
+  grep -Eq '^[[:space:]]*tls:|server_cert:' "$cfg"
+}
+
 cmd_status() {
   local services; services=$(resolve_services "$@")
 
@@ -197,9 +213,20 @@ cmd_status() {
       pid_str="$pid"
       # Health check via HTTP
       local http_code
-      http_code=$(curl -so /dev/null -w "%{http_code}" \
+      local proto="http"
+      local curl_opts=()
+
+      if uses_https "$svc"; then
+        proto="https"
+        curl_opts=(-k)
+      fi
+
+      http_code=$(curl "${curl_opts[@]}" \
+        -so /dev/null -w "%{http_code}" \
         --connect-timeout 1 --max-time 2 \
-        "http://localhost:$port/health" 2>/dev/null || echo "000")
+        "${proto}://localhost:$port/health" \
+        2>/dev/null || echo "000")
+
       if [ "$http_code" = "200" ]; then
         health_str="${GREEN}healthy${RESET}"
       else
