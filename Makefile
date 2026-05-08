@@ -11,7 +11,7 @@ GREEN := \033[32m
 CYAN  := \033[36m
 RESET := \033[0m
 
-.DEFAULT_GOAL := help
+.DEFAULT_GOAL := build
 
 .PHONY: help
 help: ## Show this help
@@ -37,7 +37,7 @@ deps/tidy: ## Tidy go.mod/go.sum for all services
 # Local process management (no Docker)
 # ─────────────────────────────────────────────────────────────────────────────
 .PHONY: start
-start: build ## Build then start all services locally (logs -> .logs/)
+start: ## Start all services locally (logs -> .logs/)
 	@$(MANAGE) start
 
 .PHONY: stop
