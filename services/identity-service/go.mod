@@ -1,14 +1,12 @@
 module github.com/CHESSComputing/FabricNode/services/identity-service
 
-go 1.26.1
+go 1.27.1
 
 require (
-	github.com/go-chi/chi/v5 v5.2.5
+	github.com/CHESSComputing/FabricNode/pkg/config v0.0.0-20260902140137-848ec6f798cc
+	github.com/CHESSComputing/FabricNode/pkg/server v0.0.0-20260902140137-848ec6f798cc
+	github.com/go-chi/chi/v5 v5.3.2
 	github.com/google/uuid v1.6.0
 )
 
-require (
-	github.com/CHESSComputing/FabricNode/pkg/config v0.0.0-20260401173051-e8aa9145f69b // indirect
-	github.com/CHESSComputing/FabricNode/pkg/server v0.0.0-20260401173051-e8aa9145f69b // indirect
-	gopkg.in/yaml.v3 v3.0.1 // indirect
-)
+require gopkg.in/yaml.v3 v3.0.1 // indirect
