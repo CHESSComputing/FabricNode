@@ -32,14 +32,28 @@ type Notification struct {
 	Acknowledged bool                  `json:"acknowledged"`
 }
 
+// DefaultMaxNotifications bounds the in-memory inbox by default.  Exceeding
+// it evicts the oldest acknowledged notifications first, then the oldest
+// entries outright.
+const DefaultMaxNotifications = 10000
+
 // Inbox is the in-memory notification store.
 type Inbox struct {
 	mu            sync.RWMutex
 	notifications []*Notification
+	// maxNotifications caps how many notifications are retained; 0 disables
+	// the cap (not recommended for long-running services).
+	maxNotifications int
 }
 
-// New returns an empty Inbox.
-func New() *Inbox { return &Inbox{} }
+// New returns an empty Inbox with a default retention cap.
+func New() *Inbox { return NewWithCap(DefaultMaxNotifications) }
+
+// NewWithCap returns an empty Inbox retaining at most cap notifications.
+// A cap <= 0 disables the cap.
+func NewWithCap(capacity int) *Inbox {
+	return &Inbox{maxNotifications: capacity}
+}
 
 // Add stores a notification and returns it with an assigned ID.
 func (i *Inbox) Add(raw map[string]any) *Notification {
@@ -79,8 +93,33 @@ func (i *Inbox) Add(raw map[string]any) *Notification {
 
 	i.mu.Lock()
 	i.notifications = append(i.notifications, n)
+	if i.maxNotifications > 0 && len(i.notifications) > i.maxNotifications {
+		i.evictLocked()
+	}
 	i.mu.Unlock()
 	return n
+}
+
+// evictLocked trims notifications down to the cap; callers must hold i.mu
+// for writing.  Oldest acknowledged entries are removed first; if the store
+// is still over the cap, the oldest entries are dropped regardless.
+func (i *Inbox) evictLocked() {
+	excess := len(i.notifications) - i.maxNotifications
+	if excess <= 0 {
+		return
+	}
+	kept := i.notifications[:0]
+	for _, n := range i.notifications {
+		if excess > 0 && n.Acknowledged {
+			excess--
+			continue
+		}
+		kept = append(kept, n)
+	}
+	i.notifications = kept
+	if excess > 0 {
+		i.notifications = i.notifications[excess:]
+	}
 }
 
 // List returns all notifications, optionally filtered by type.

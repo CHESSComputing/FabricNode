@@ -2,12 +2,13 @@ package main
 
 import (
 	"encoding/json"
-	"fmt"
 	"io"
 	"log"
 	"net/http"
+	"net/url"
 	"os"
 	"strings"
+	"time"
 )
 
 // Token represents response from OAuth server call
@@ -17,20 +18,39 @@ type Token struct {
 	Expires     int64  `json:"expires_in"`
 }
 
-// GetTokenFromFoxden returns a token from FOXDEN
+// GetTokenFromFoxden returns a token from FOXDEN.
+//
+// The OAuth2 client_credentials token request is sent as a POST form body:
+// the client secret must never appear in the URL, which proxies and access
+// logs record. The HTTP client carries a timeout so a hung auth server
+// cannot block service startup indefinitely.
 func GetTokenFromFoxden(furl, cid, secret, scope string) string {
-	rurl := fmt.Sprintf(
-		"%s/oauth/token?client_id=%s&response&client_secret=%s&grant_type=client_credentials&scope=%s", furl, cid, secret, scope)
-	resp, err := http.Get(rurl)
+	form := url.Values{}
+	form.Set("grant_type", "client_credentials")
+	form.Set("client_id", cid)
+	form.Set("client_secret", secret)
+	if scope != "" {
+		form.Set("scope", scope)
+	}
+	client := &http.Client{Timeout: 10 * time.Second}
+	resp, err := client.PostForm(furl+"/oauth/token", form)
 	if err != nil {
 		log.Println("ERROR", err)
 		return ""
 	}
 	defer resp.Body.Close()
-	data, err := io.ReadAll(resp.Body)
-	var response Token
-	err = json.Unmarshal(data, &response)
+
+	data, err := io.ReadAll(io.LimitReader(resp.Body, 1<<20))
 	if err != nil {
+		log.Println("ERROR", err)
+		return ""
+	}
+	if resp.StatusCode != http.StatusOK {
+		log.Printf("ERROR: token endpoint returned HTTP %d: %.500s", resp.StatusCode, data)
+		return ""
+	}
+	var response Token
+	if err := json.Unmarshal(data, &response); err != nil {
 		log.Println("ERROR", err)
 		return ""
 	}
@@ -52,5 +72,8 @@ func GetToken(tokenSource string) string {
 		return token
 	}
 
-	return tokenSource
+	// Do NOT return tokenSource itself: if the operator configured an
+	// environment-variable *name* that is unset, returning the name would
+	// silently send a garbage bearer token upstream.
+	return ""
 }

@@ -35,6 +35,10 @@ func Triples(cfg StoreConfig) http.HandlerFunc {
 			return
 		}
 
+		// Bound the request body: an unbounded Decode lets a single oversized
+		// POST exhaust service memory. Triple arrays are at most a few MB.
+		req.Body = http.MaxBytesReader(w, req.Body, maxTripleBodyBytes)
+
 		var triples []store.Triple
 		if err := json.NewDecoder(req.Body).Decode(&triples); err != nil {
 			http.Error(w, `{"error":"invalid JSON body"}`, http.StatusBadRequest)
@@ -80,6 +84,10 @@ func Validate(cfg StoreConfig) http.HandlerFunc {
 			return
 		}
 
+		// Bound the request body: an unbounded Decode lets a single oversized
+		// POST exhaust service memory. Triple arrays are at most a few MB.
+		req.Body = http.MaxBytesReader(w, req.Body, maxTripleBodyBytes)
+
 		var triples []store.Triple
 		if err := json.NewDecoder(req.Body).Decode(&triples); err != nil {
 			http.Error(w, `{"error":"invalid JSON body"}`, http.StatusBadRequest)
@@ -95,6 +103,10 @@ func Validate(cfg StoreConfig) http.HandlerFunc {
 // ──────────────────────────────────────────────────────────────────────────────
 // Shared path helper
 // ──────────────────────────────────────────────────────────────────────────────
+
+// maxTripleBodyBytes caps the JSON body accepted by the triple write and
+// dry-run validation endpoints.
+const maxTripleBodyBytes = 4 << 20 // 4 MiB
 
 // datasetRefFromPath extracts and validates the {beamline} and {did} URL
 // parameters.  The DID is URL-decoded before parsing.

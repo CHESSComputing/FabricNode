@@ -261,7 +261,6 @@ func Load(path string) (*Config, error) {
 		return nil, fmt.Errorf("config: read %q: %w", resolved, err)
 	}
 	log.Printf("Using configuration %s", resolved)
-	log.Printf("Configuration data\n%v", string(data))
 
 	cfg := defaults()
 	if resolved == "" {
@@ -324,7 +323,7 @@ func (c *Config) ApplyEnv() {
 	if v := os.Getenv("DATA_SERVICE_URL"); v != "" {
 		c.Node.DataServiceURL = v
 	}
-	log.Printf("apply cfg %+v", c)
+	log.Printf("applied environment overrides:\n%v", c.redactedString())
 }
 
 // ──────────────────────────────────────────────────────────────────────────────
@@ -406,4 +405,29 @@ func resolvePath(explicit string) (string, error) {
 
 func isJSON(path string) bool {
 	return strings.HasSuffix(strings.ToLower(path), ".json")
+}
+
+// redactedString renders the configuration as JSON with secret fields
+// (FOXDEN token, client secret) masked, so it is safe to log.
+func (c *Config) redactedString() string {
+	b, err := json.Marshal(c)
+	if err != nil {
+		return "{unrenderable}"
+	}
+	var m map[string]any
+	if err := json.Unmarshal(b, &m); err != nil {
+		return "{unrenderable}"
+	}
+	if f, ok := m["foxden"].(map[string]any); ok {
+		for _, key := range []string{"token", "authz_client_secret"} {
+			if v, ok := f[key].(string); ok && v != "" {
+				f[key] = "***redacted***"
+			}
+		}
+	}
+	out, err := json.MarshalIndent(m, "", "  ")
+	if err != nil {
+		return "{unrenderable}"
+	}
+	return string(out)
 }

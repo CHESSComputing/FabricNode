@@ -10,10 +10,16 @@ import (
 	"net/url"
 	"os"
 	"strings"
+	"time"
 
 	fabricconfig "github.com/CHESSComputing/FabricNode/pkg/config"
 	"github.com/go-chi/chi/v5"
 )
+
+// foxdenHTTPClient is shared by all FOXDEN lookups so connections are pooled
+// and every call carries a timeout.  A client without a timeout lets a hung
+// FOXDEN connection pin handler goroutines indefinitely.
+var foxdenHTTPClient = &http.Client{Timeout: 15 * time.Second}
 
 // Beamlines lists all registered beamlines as a DCAT JSON-LD catalog.
 //
@@ -143,16 +149,16 @@ func getDids(cfg *fabricconfig.Config, bl string) ([]string, error) {
 	if err != nil {
 		return dids, err
 	}
-	// setup http client
+	// Send the filter as a POST body: a GET carrying a body is widely
+	// ignored by servers, which silently dropped the $or beamline filter.
 	rurl := fmt.Sprintf("%s/records?projection=did", cfg.Foxden.MetadataURL)
-	req, err := http.NewRequest("GET", rurl, bytes.NewBuffer(data))
+	req, err := http.NewRequest("POST", rurl, bytes.NewBuffer(data))
 	if err != nil {
 		return dids, err
 	}
 	req.Header.Add("Authorization", fmt.Sprintf("Bearer %s", getToken(cfg.Foxden.Token)))
 	req.Header.Add("Content-Type", "application/json")
-	client := &http.Client{}
-	resp, err := client.Do(req)
+	resp, err := foxdenHTTPClient.Do(req)
 	if err != nil {
 		return dids, err
 	}
@@ -183,7 +189,7 @@ func datasetsForBeamline(cfg *fabricconfig.Config, bl fabricconfig.BeamlineConfi
 	// query FOXDEN for all dids with our beamline
 	dids, err := getDids(cfg, bl.ID)
 	if err != nil {
-		log.Println("ERROR: unable to obtain dids from FOXDEN beamline %s, error %v", bl.ID, err)
+		log.Printf("ERROR: unable to obtain dids from FOXDEN beamline %s, error %v", bl.ID, err)
 		return make([]map[string]any, 0, 0)
 	}
 	out := make([]map[string]any, 0, len(dids))
