@@ -29,19 +29,7 @@ integration with the **[Open Knowledge Network (OKN)](https://okn.us/)** ecosyst
 ```
 
 ### FOXDEN & OKN Integration Topology
-
-```
-                  [ Researchers / AI agents ]
-                               │
-               ┌───────────────┴───────────────┐
-               ▼                               ▼
-       [ FOXDEN Ecosystem ]          [ Fabric Node (okn.us ready) ]
-       ├── Frontend service          ├── Catalog service (VoID + TPF link)
-       ├── Metadata service          ├── Data service (SPARQL & Native TPF)
-       ├── Provenance service        ├── Identity service (DID / VC)
-       └── DOI/Publish service       └── Notification service (LDN Inbox)
-
-```
+Here is architectural diagram of FOXDEN FabricNode:
 
 ![Architecture](docs/images/FOXDEN_FabricNode_integration.png)
 
