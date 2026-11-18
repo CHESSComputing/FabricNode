@@ -1,36 +1,54 @@
 # CHESS Federated Knowledge Fabric Node
 
-A **Knowledge Fabric node** for the
-Cornell High Energy Synchrotron Source (CHESS). Each service implements a
-specific layer of the W3C-standards-based self-description stack defined in the
-[Federated Knowledge Fabric prototype](./CONCEPT.md).
+A **Knowledge Fabric node** for the Cornell High Energy Synchrotron Source
+(CHESS). Each service implements a specific layer of the W3C-standards-based
+self-description stack defined in the [Federated Knowledge Fabric
+prototype](https://www.google.com/search?q=./CONCEPT.md), providing both direct
+SPARQL querying and low-cost **Triple Pattern Fragments (TPF)** endpoints for
+integration with the **[Open Knowledge Network (OKN)](https://okn.us/)** ecosystem.
 
 ---
 
-## Architecture
+## Architecture & FOXDEN Integration
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
 │                External Agents / Researchers                    │
-│          (LLM agents, curl, semantic web clients)               │
+│      (LLM agents, OKN federated query engines, curl, LDF)       │
 └──────┬──────────────┬─────────────────┬──────────────┬──────────┘
        │              │                 │              │
        ▼              ▼                 ▼              ▼
  :8781 catalog  :8782 data       :8783 identity  :8784 notifications
  ─────────────  ──────────────   ──────────────  ─────────────────
- L1 VoID        SPARQL endpoint  did:web DID doc  W3C LDN inbox
- L1 PROF        Named graphs     Conformance VC   PendingTask alerts
+ L1 VoID + TPF  SPARQL endpoint  did:web DID doc  W3C LDN inbox
+ L1 PROF        TPF endpoint     Conformance VC   PendingTask alerts
  L3 SHACL       SHACL-gated      VC verification  ActivityStreams
  L4 SPARQL      triple writes    DID resolution   event routing
     examples
+
+```
+
+### FOXDEN & OKN Integration Topology
+
+```
+                  [ Researchers / AI agents ]
+                               │
+               ┌───────────────┴───────────────┐
+               ▼                               ▼
+       [ FOXDEN Ecosystem ]          [ Fabric Node (okn.us ready) ]
+       ├── Frontend service          ├── Catalog service (VoID + TPF link)
+       ├── Metadata service          ├── Data service (SPARQL & Native TPF)
+       ├── Provenance service        ├── Identity service (DID / VC)
+       └── DOI/Publish service       └── Notification service (LDN Inbox)
+
 ```
 
 ## Services
 
 | Service | Port | Role |
-|---------|------|------|
-| **catalog-service** | 8781 | Four-layer self-description (VoID/PROF/SHACL/SPARQL examples) |
-| **data-service** | 8782 | SPARQL triple store with SHACL-validated writes |
+| --- | --- | --- |
+| **catalog-service** | 8781 | Four-layer self-description (VoID/PROF/SHACL/SPARQL examples + TPF subset link) |
+| **data-service** | 8782 | SPARQL triple store & Native **TPF endpoint** (`/tpf`) for OKN federation |
 | **identity-service** | 8783 | DID document + Verifiable Credential issuance/verification |
 | **notification-service** | 8784 | W3C LDN inbox for inter-node messaging |
 
@@ -59,10 +77,11 @@ make demo
 Demo complete.
 
 All four fabric layers demonstrated:
-  L1 VoID + PROF    → catalog:8781/.well-known/void
+  L1 VoID + PROF    → catalog:8781/.well-known/void (includes TPF link)
   L3 SHACL          → catalog:8781/.well-known/shacl
   L4 SPARQL examples → catalog:8781/.well-known/sparql-examples
-  Data              → data:8782/sparql
+  Data (SPARQL)     → data:8782/sparql
+  Data (TPF)        → data:8782/tpf{?subject,predicate,object}
   Identity (DID+VC) → identity:8783/.well-known/did.json
   Notifications(LDN)→ notifications:8784/inbox
 
@@ -71,34 +90,45 @@ make health
 
 # cleanup
 make clean/all
+
 ```
 
-## What an Agent Does with This Node
+## What an Agent or OKN Engine Does with This Node
 
-An LLM-based agent following the Knowledge Fabric progressive disclosure pattern:
+An LLM-based agent or a federated query engine (such as Comunica for **okn.us**) following the Knowledge Fabric progressive disclosure pattern:
 
 ```
 1. GET /.well-known/void        (catalog:8781)
-   → learns which CHESS beamlines exist; finds SPARQL endpoint URL
+   → learns which CHESS beamlines exist; discovers SPARQL endpoint & TPF uriLookupEndpoint
 
-2. GET /.well-known/shacl       (catalog:8781)
+2. GET /tpf?page=1              (data:8782)
+   → evaluates low-cost Triple Pattern Fragments via Hydra-compliant JSON-LD
+
+3. GET /.well-known/shacl       (catalog:8781)
    → learns Observations need resultTime, madeBySensor, observedProperty
 
-3. GET /.well-known/sparql-examples (catalog:8781)
+4. GET /.well-known/sparql-examples (catalog:8781)
    → copies working query templates
 
-4. GET /sparql?g=...observations (data:8782)
-   → queries calibrated measurement data
+5. GET /sparql?g=...observations (data:8782)
+   → queries calibrated measurement data via direct SPARQL
 
-5. GET /.well-known/did.json    (identity:8783)
+6. GET /.well-known/did.json    (identity:8783)
    → resolves node identity, discovers all service endpoints
 
-6. POST /inbox                  (notifications:8784)
+7. POST /inbox                  (notifications:8784)
    → subscribes to new-run events
+
 ```
 
-Each step is self-contained; an agent can stop at any layer once it has enough
-context to answer its query.
+Each step is self-contained; an agent can stop at any layer once it has enough context to answer its query.
+
+## OKN Integration & TPF Specification
+
+To make FabricNode fully compliant with the **OKN (okn.us)** registry:
+
+* **VoID Dataset Discovery:** The `catalog-service` exposes a `void:subset` pointing to the `void:uriLookupEndpoint` (`http://data:8782/tpf{?subject,predicate,object}`).
+* **Hydra-Compliant TPF Interface:** The `data-service` native `/tpf` endpoint returns **Hydra JSON-LD** collections (`hydra:PagedCollection`, `hydra:PartialCollectionView`, `hydra:totalItems`, and `hydra:member`), enabling low-server-overhead federation across distributed knowledge graphs.
 
 ## Project Structure
 
@@ -106,14 +136,15 @@ context to answer its query.
 FabricNode/
 ├── CONCEPT.md                   ← Federated Knowledge Fabric concept summary
 └── services/
-    ├── catalog-service/         ← L1/L3/L4 self-description
+    ├── catalog-service/         ← L1/L3/L4 self-description & VoID template with TPF subset
     │   ├── internal/
     │   │   ├── rdf/             ← content negotiation
     │   │   └── void/            ← VoID, PROF, SHACL, SPARQL examples generators
-    ├── data-service/            ← SPARQL + SHACL-validated writes
+    ├── data-service/            ← SPARQL + SHACL-validated writes + Native TPF endpoint
     │   ├── internal/
     │   │   ├── store/           ← in-memory triple store with named graphs
     │   │   ├── sparql/          ← SPARQL query handler
+    │   │   ├── tpf/             ← Triple Pattern Fragments handler & Hydra formatting
     │   │   └── shacl/           ← ObservationShape validator
     ├── identity-service/        ← DID + VC identity layer
     │   ├── internal/
@@ -123,6 +154,7 @@ FabricNode/
     └── notification-service/    ← W3C LDN inbox
         ├── internal/
         │   └── store/           ← notification inbox store
+
 ```
 
 ### Local development
@@ -134,23 +166,24 @@ To work locally ensure that you have `go.work`
 go work init ./pkg/... ./services/...
 go work sync
 make build
+
 ```
 
 Here is an example of `go.work` file
 
-
 ```
-go 1.26.1
+go 1.27.1
 
 use (
-	./pkg/config
-	./pkg/model
-	./pkg/server
+    ./pkg/config
+    ./pkg/model
+    ./pkg/server
     ./services/catalog-service
     ./services/data-service
     ./services/identity-service
     ./services/notification-service
 )
+
 ```
 
 Ensure CI works without it
