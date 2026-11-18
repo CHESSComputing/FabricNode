@@ -13,6 +13,7 @@ import (
 	"github.com/CHESSComputing/FabricNode/services/data-service/internal/foxden"
 	"github.com/CHESSComputing/FabricNode/services/data-service/internal/handlers"
 	"github.com/CHESSComputing/FabricNode/services/data-service/internal/store"
+	"github.com/CHESSComputing/FabricNode/services/data-service/internal/tpf"
 )
 
 func main() {
@@ -79,6 +80,9 @@ func main() {
 	r.Get("/sparql", handlers.SPARQL(db))
 	r.Post("/sparql", handlers.SPARQL(db))
 	r.Get("/graphs", handlers.Graphs(db))
+
+	// tpf routes
+	r.Get("/tpf", tpf.HandleTPF)
 
 	// ── Beamline-scoped routes ────────────────────────────────────────────────
 	r.Route("/beamlines/{beamline}", func(r chi.Router) {
