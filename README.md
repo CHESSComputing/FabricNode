@@ -43,6 +43,9 @@ integration with the **[Open Knowledge Network (OKN)](https://okn.us/)** ecosyst
 
 ```
 
+![Architecture](docs/images/FOXDEN_FabricNode_integration.png)
+
+
 ## Services
 
 | Service | Port | Role |
