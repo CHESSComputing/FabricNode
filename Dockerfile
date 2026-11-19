@@ -11,7 +11,7 @@ COPY pkg/ ./pkg/
 COPY services/ ./services/
 
 # Build all services
-RUN make build
+RUN make
 
 # Runtime stage
 FROM debian:bookworm-slim AS runtime
