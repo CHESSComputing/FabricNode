@@ -9,6 +9,21 @@ integration with the **[Open Knowledge Network (OKN)](https://okn.us/)** ecosyst
 
 ---
 
+A Knowledge Fabric Node is 
+a four-layer progressive disclosure architecture that allows autonomous agents to 
+progressively understand a facility's capabilities without manual configuration. 
+Each participating facility deploys a self-describing node exposing 
+standardized web services: a catalog layer documenting available beamlines, 
+instruments, and datasets; a data layer offering query access to calibrated 
+observations through semantic web standards; an identity layer using 
+decentralized identifiers for tamper-evident provenance; and a notification 
+layer for real-time alerts about new data availability. This design enables 
+AI agents to automatically discover facilities across a federation, 
+understand their data structures through machine-readable schemas, 
+verify data authenticity through cryptographic signatures, 
+and subscribe to updates when new measurements become available. 
+
+
 ## Architecture & FOXDEN Integration
 
 ```
@@ -27,6 +42,42 @@ integration with the **[Open Knowledge Network (OKN)](https://okn.us/)** ecosyst
     examples
 
 ```
+
+**Progressive Disclosure in the Knowledge Fabric Context**
+
+The term "four-layer progressive disclosure architecture" describes how the system reveals information to clients (human users or AI agents) in increasing levels of detail, depending on what they need.
+
+An agent interacts with the fabric node in distinct stages:
+
+| Step | Layer | What's Revealed | Purpose |
+|------|-------|-----------------|---------|
+| 1 | VoID/PROF | Catalog of beamlines, instruments, datasets | "What data exists here?" |
+| 2 | SHACL | Validation schemas, required fields, constraints | "What format does the data expect?" |
+| 3 | SPARQL Examples | Working query templates | "How do I actually retrieve data?" |
+| 4 | Data + Identity | Actual observations, node identity, credentials | "Query the data, verify authenticity" |
+| 5 | Notifications | Event subscriptions for new data | "Stay updated when data changes" |
+
+Progressive disclosure solves several practical problems:
+
+1. **Cognitive Load Reduction**: An AI agent (or human researcher) doesn't need to parse complete technical documentation upfront. It starts with simple discovery and drills deeper only as needed.
+
+2. **Incremental Trust Building**: Each layer provides more capability but also more verification points. An agent can validate the catalog before querying data, and verify data provenance before trusting it for training.
+
+3. **Self-Documenting Systems**: The fabric "teaches" new agents how to use itself through exposed endpoints (`/.well-known/void`, `/.well-known/shacl`, `/.well-known/sparql-examples`) rather than requiring external manuals.
+
+4. **Graceful Degradation**: If an agent only needs to know what datasets exist, it can stop at Layer 1. It doesn't need to understand authentication or notifications to perform basic discovery.
+
+**Technical Implementation**
+
+Each layer corresponds to specific W3C standards:
+
+| Layer | Standard | Endpoint |
+|-------|----------|----------|
+| L1 | VoID (Vocabulary of Interlinked Datasets) + PROF (Profile) | `/.well-known/void` |
+| L3 | SHACL (Shapes Constraint Language) | `/.well-known/shacl` |
+| L4 | SPARQL Query Results | `/.well-known/sparql-examples` |
+| Identity | DID (Dataset Identifiers) + VC (Verifiable Credentials) | `/.well-known/did.json` |
+| Notifications | LDN (Linked Data Notifications) | `/inbox` |
 
 ### FOXDEN & OKN Integration Topology
 Here is architectural diagram of FOXDEN FabricNode:
