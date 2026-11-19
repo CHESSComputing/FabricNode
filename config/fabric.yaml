@@ -1,0 +1,145 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# CHESS Federated Knowledge Fabric Node — node configuration
+#
+# Copy this file to the root of your deployment and edit as needed.
+# Sensitive values (tokens, keys) should be set via environment variables
+# rather than stored here; see the "Environment overrides" section below.
+#
+# Environment overrides (take precedence over file values):
+#   FABRIC_CONFIG         — path to this file
+#   NODE_ID               — node.id
+#   NODE_NAME             — node.name
+#   NODE_BASE_URL         — node.base_url
+#   FOXDEN_URL            — foxden.metadata_url  (legacy single-URL shorthand)
+#   FOXDEN_METADATA_URL   — foxden.metadata_url
+#   FOXDEN_PROVENANCE_URL — foxden.provenance_url
+#   FOXDEN_TOKEN          — foxden.token
+# ─────────────────────────────────────────────────────────────────────────────
+
+# ── Node identity (shared by all services) ────────────────────────────────────
+node:
+  id: chess-node
+  name: CHESS Federated Knowledge Fabric Node
+  base_url: http://localhost:8781   # externally reachable root; each service appends its own port
+  # iri_base is the single mandatory IRI prefix for ALL generated RDF IRIs:
+  #   named-graph IRIs:     <iri_base>/graph/<beamline>/<did-segments>
+  #   dataset subject IRIs: <iri_base>/dataset<did>
+  #   RDF namespace (chess:): <iri_base>/ns#
+  #   sensor IRIs:          <iri_base>/sensor/<id>
+  #
+  iri_base: https://chess.cornell.edu/
+
+# ── Catalog service (:8781) ───────────────────────────────────────────────────
+catalog:
+  port: 8781
+
+  # Registry of beamlines served by this node.
+  # id    — lower-case alphanumeric, must match the beamline= segment in DIDs
+  # label — human-readable name shown in catalog and VoID responses
+  # type  — technique class used in SHACL shape constraints
+  beamlines:
+    - id: 1a3
+      label: "the Structural Materials Beamline"
+      type: "high-energy"
+      description: "High-energy monochromatic and white-beam characterization of materials' structure and evolution across length-scales."
+      location: CHESS Wilson Laboratory, Cornell University
+      alias: SMB
+      partners: ["MSN-C"]
+
+    - id: 2a
+      label: "Photon-In, Photon-Out X-ray Spectroscopy Beamline"
+      type: "X-ray spectroscopy"
+      description: "X-ray spectroscopic studies of geometric and valence electronic structure in catalytic systems and functional materials"
+      location: CHESS Wilson Laboratory, Cornell University
+      alias: PIPOXS
+      partners: ["CHEXS"]
+
+    - id: 3a
+      label: "Forming and Shaping Technology Beamline"
+      type: "structural metals"
+      description: "Time-resolved studies of manufacturing processes of structural metals."
+      location: CHESS Wilson Laboratory, Cornell University
+      alias: FAST
+      partners: ["CHEXS"]
+    - id: 3b
+      label: "Functional Materials Beamline"
+      type: "SAXS, WAXS"
+      description: "SAXS, WAXS in microscopy, bulk, and grazing incidence modes; Real-space X-ray radiography, phase-contrast imaging, and tomography. X-ray fluorescence microscopy."
+      location: CHESS Wilson Laboratory, Cornell University
+      alias: FMB
+      partners: ["MSN-C"]
+
+    - id: 4b
+      label: "Q-Mapping for Quantum Materials Beamline"
+      type: "quantum materials"
+      description: "High-throughput characterization of quantum materials"
+      location: CHESS Wilson Laboratory, Cornell University
+      alias: QM2
+      partners: ["CHEXS"]
+
+    - id: 7a
+      label: "Biological Small Angle X-ray Solution Scattering
+and High-Pressure Biology Beamline"
+      type: "biomolecular"
+      description: "Biomolecular structure from solution; High-pressure studies in biophysics; Food Science."
+      location: CHESS Wilson Laboratory, Cornell University
+      alias: "XBio/BioSAXS"
+      partners: [ "CHEXS", "MacCHESS"]
+
+    - id: 7b
+      label: "Flexible Protein Crystallography and High-Pressure Biology Beamline"
+      type: "macromolecular"
+      description: "Macromolecular crystallography(MX); Standard cryocrystallography, Serial crystallography; High-Pressure cryocooling, high-pressure crystallography in diamond anvil cell."
+      location: CHESS Wilson Laboratory, Cornell University
+      alias: "XBio/FlexX"
+      partners: [ "CHEXS", "MacCHESS"]
+
+    # Uncomment and extend as new beamlines are commissioned:
+    # - id: qm2
+    #   label: "Beamline QM2 — Quantum Materials"
+    #   type: small-angle-scattering
+
+# ── Data service (:8782) ──────────────────────────────────────────────────────
+data_service:
+  graph_iri_base: "http://chess.cornell.edu/"    # prefix for named-graph IRIs in the store
+  dataset_iri_base: "http://chess.cornell.edu/"  # prefix for dataset subject IRIs in triples
+  port: 8782
+  sparql_result_limit: 100   # max triples returned by any SPARQL query
+  store_type: memory         # "memory" (default) or "oxigraph"
+  oxigraph_url: ""           # required when store_type=oxigraph
+  oxigraph_timeout: 30       # seconds; default 30
+
+# ── Identity service (:8783) ──────────────────────────────────────────────────
+identity:
+  port: 8783
+
+# ── Notification service (:8784) ──────────────────────────────────────────────
+notification:
+  port: 8784
+
+# ── FOXDEN integration ────────────────────────────────────────────────────────
+foxden:
+  metadata_url:   http://localhost:8300   # FOXDEN metadata service
+  provenance_url: http://localhost:8310   # FOXDEN provenance service
+  doi_url:        http://localhost:8377   # FOXDEN DOI/publication service
+  authz_url:      http://localhost:8380   # FOXDEN Authz service
+
+  # Bearer token for FOXDEN authentication.
+  # Leave empty for unauthenticated (development) instances.
+  # In production use the FOXDEN_TOKEN environment variable instead.
+  token: "/Users/vk/Work/CHESS/FOXDEN/FabricNode/foxden.token"
+
+  # HTTP client timeout in seconds.
+  timeout: 10
+
+  # foxden schema files
+  schema_files:
+    - "/Users/vk/Work/CHESS/FOXDEN/FOXDEN/configs/user.json"
+    - "/Users/vk/Work/CHESS/FOXDEN/FOXDEN/configs/Composite.json"
+    - "/Users/vk/Work/CHESS/FOXDEN/FOXDEN/configs/ID4B.json"
+    - "/Users/vk/Work/CHESS/FOXDEN/FOXDEN/configs/ID3A.json"
+    - "/Users/vk/Work/CHESS/FOXDEN/FOXDEN/configs/ID1A3.json"
+    - "/Users/vk/Work/CHESS/FOXDEN/FOXDEN/configs/ID3B.json"
+    - "/Users/vk/Work/CHESS/FOXDEN/FOXDEN/configs/ID7A.json"
+    - "/Users/vk/Work/CHESS/FOXDEN/FOXDEN/configs/Analysis.json"
+
