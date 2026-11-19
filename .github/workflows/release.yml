@@ -43,6 +43,7 @@ jobs:
         GOPATH: /home/runner/go
       run: |
         make build
+        make changes
         tar cvfz fabricnode.tar.gz scripts config services/*/bin
 
     - name: Set up QEMU
